@@ -1,5 +1,6 @@
 #include "client_states.h"
 #include "client.h"
+#include "common.h"
 #include <string.h>
 
 // ----- State Handlers -----
@@ -21,7 +22,7 @@ static void handle_playing_input(Client *client, const char *line) {
 }
 
 static void handle_character_creation_input(Client *client, const char *line) {
-    (void)line;
+    UNUSED(line);
 
     client_write(client, "Character creation not implemented yet. Returning to menu...\n");
     client_state_enter_menu(client);
