@@ -1,22 +1,32 @@
 #include "server.h"
+#include "client.h"
+#include "client_states.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <poll.h>
+#include <string.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #define MAX_CLIENTS 128
-#define BUFFER_SIZE 2048
 
 static int make_socket_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) return -1;
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+// Removes trailing newline, carriage return, spaces, and tabs
+static void trim_trailing_whitespace(char *str) {
+    size_t len = strlen(str);
+    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' || str[len - 1] == ' ' || str[len - 1] == '\t')) {
+        str[--len] = '\0';
+    }
 }
 
 bool server_start(int port) {
@@ -27,7 +37,11 @@ bool server_start(int port) {
     }
 
     int opt = 1;
-    setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    if (setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt");
+        close(listener_fd);
+        return false;
+    }
 
     struct sockaddr_in server_addr = {0};
     server_addr.sin_family = AF_INET;
@@ -46,9 +60,14 @@ bool server_start(int port) {
         return false;
     }
 
-    make_socket_nonblocking(listener_fd);
+    if (make_socket_nonblocking(listener_fd) < 0) {
+        perror("make_socket_nonblocking");
+        close(listener_fd);
+        return false;
+    }
 
     struct pollfd fds[MAX_CLIENTS];
+    Client* clients[MAX_CLIENTS] = {0};
     int nfds = 1;
 
     fds[0].fd = listener_fd;
@@ -67,6 +86,7 @@ bool server_start(int port) {
             if (fds[i].revents == 0) continue;
 
             if (fds[i].fd == listener_fd) {
+                // Accept new connection
                 struct sockaddr_in client_addr;
                 socklen_t addrlen = sizeof(client_addr);
                 int client_fd = accept(listener_fd, (struct sockaddr*)&client_addr, &addrlen);
@@ -75,34 +95,54 @@ bool server_start(int port) {
                     continue;
                 }
 
-                make_socket_nonblocking(client_fd);
-                if (nfds < MAX_CLIENTS) {
-                    fds[nfds].fd = client_fd;
-                    fds[nfds].events = POLLIN;
-                    nfds++;
-                    printf("New client connected: %s:%d\n",
-                           inet_ntoa(client_addr.sin_addr),
-                           ntohs(client_addr.sin_port));
-                } else {
-                    printf("Too many clients! Dropping connection.\n");
+                if (make_socket_nonblocking(client_fd) < 0) {
+                    perror("make_socket_nonblocking (client)");
                     close(client_fd);
+                    continue;
                 }
 
+                if (nfds >= MAX_CLIENTS) {
+                    printf("Too many clients. Dropping connection.\n");
+                    close(client_fd);
+                    continue;
+                }
+
+                Client *client = client_create(client_fd, &client_addr);
+                if (!client) {
+                    perror("client_create");
+                    close(client_fd);
+                    continue;
+                }
+
+                fds[nfds].fd = client_fd;
+                fds[nfds].events = POLLIN;
+                clients[nfds] = client;
+                nfds++;
+
+                printf("New client connected from %s\n", client->ip_string);
+                client_state_enter_menu(client);
+                client_flush(client);
             } else {
-                char buffer[BUFFER_SIZE];
-                ssize_t bytes_read = read(fds[i].fd, buffer, sizeof(buffer) - 1);
+                Client *client = clients[i];
+                if (!client) continue;
 
-                if (bytes_read <= 0) {
-                    printf("Client disconnected (fd=%d)\n", fds[i].fd);
+                if (!client_read(client)) {
+                    printf("Client disconnected: %s\n", client->ip_string);
+                    client_destroy(client);
                     close(fds[i].fd);
+
+                    // Compact list
                     fds[i] = fds[nfds - 1];
+                    clients[i] = clients[nfds - 1];
+                    clients[nfds - 1] = NULL;
                     nfds--;
-                    i--; // recheck the new fds[i]
-                } else {
-                    buffer[bytes_read] = '\0';
-                    printf("Client %d says: %s", fds[i].fd, buffer);
-                    write(fds[i].fd, buffer, bytes_read); // echo
+                    i--; // check moved client
+                    continue;
                 }
+
+                trim_trailing_whitespace(client->input_buffer);
+                client_handle_input(client, client->input_buffer);
+                client_flush(client);
             }
         }
     }
@@ -110,3 +150,4 @@ bool server_start(int port) {
     close(listener_fd);
     return true;
 }
+
