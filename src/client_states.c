@@ -2,26 +2,41 @@
 #include <string.h>
 #include <stdio.h>
 
-static void handle_menu_input(Client *client, const char *input) {
-    if (strcmp(input, "play") == 0) {
+// Trims whitespace in place (null-terminates as well)
+static void trim_trailing_whitespace(char *str) {
+    size_t len = strlen(str);
+    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' ||
+                       str[len - 1] == ' '  || str[len - 1] == '\t')) {
+        str[--len] = '\0';
+    }
+}
+
+static void handle_menu_input(Client *client, Buffer *input) {
+    buffer_append(input, "", 0); // ensure null-terminated
+    trim_trailing_whitespace(input->data);
+
+    if (strcmp(input->data, "play") == 0) {
         client_state_enter_playing(client);
-    } else if (strcmp(input, "create") == 0) {
+    } else if (strcmp(input->data, "create") == 0) {
         client_state_enter_character_creation(client);
     } else {
         client_write(client, "Menu: type 'play' or 'create'\n");
     }
+
+    buffer_clear(input);
 }
 
-static void handle_playing_input(Client *client, const char *input) {
-    char response[256];
-    snprintf(response, sizeof(response), "You are playing. You typed: %s\n", input);
-    client_write(client, response);
+static void handle_playing_input(Client *client, Buffer *input) {
+    buffer_append(input, "", 0);
+    trim_trailing_whitespace(input->data);
+
+    buffer_appendf(client->output, "You are playing. You typed: %s\n", input->data);
+    buffer_clear(input);
 }
 
-static void handle_character_creation_input(Client *client, const char *input) {
-    (void)input;
-
+static void handle_character_creation_input(Client *client, Buffer *input) {
     client_write(client, "Character creation not implemented yet. Returning to menu...\n");
+    buffer_clear(input);
     client_state_enter_menu(client);
 }
 
