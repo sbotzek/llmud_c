@@ -7,6 +7,7 @@
 
 #define CLIENT_NAME_LENGTH 64
 #define CLIENT_MAX_LINE    1024  // Max length for a single input line
+#define CLIENT_INPUT_BUFFER_SIZE (CLIENT_MAX_LINE * 2) // must be at least 2x CLIENT_MAX_LINE
 
 typedef struct Client Client;
 
@@ -25,7 +26,8 @@ struct Client {
     bool connected;
 
     // Input handling
-    char input_buffer[CLIENT_MAX_LINE]; // Current input buffer
+    //
+    char input_buffer[CLIENT_INPUT_BUFFER_SIZE]; // Current input buffer
     size_t input_length;                // Number of chars in input_buffer
     size_t input_line_end;             // Index of '\0' that terminates a ready line, or 0 if none
     bool input_discarding;             // True if we're discarding a too-long line

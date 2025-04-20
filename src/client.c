@@ -55,22 +55,21 @@ void client_destroy(Client *client) {
 
 bool client_read(Client *client) {
     if (client->input_line_end != 0) {
-        return true; // A complete line is already buffered
+        return true; // Already have a full line
     }
 
-    char temp[CLIENT_MAX_LINE];
+    char temp[CLIENT_MAX_LINE + 1]; // safe size for one full line (+ \0)
     size_t read_limit;
 
     if (client->input_discarding) {
-        read_limit = CLIENT_MAX_LINE;
+        read_limit = sizeof(temp);
     } else {
-        size_t space_left = CLIENT_MAX_LINE - 1 - client->input_length;
-        if (space_left == 0) {
+        size_t space_left = CLIENT_INPUT_BUFFER_SIZE - client->input_length;
+        read_limit = space_left > sizeof(temp) ? sizeof(temp) : space_left;
+        if (read_limit == 0) {
             client->input_length = 0;
             client->input_discarding = true;
-            read_limit = CLIENT_MAX_LINE;
-        } else {
-            read_limit = space_left;
+            read_limit = sizeof(temp);
         }
     }
 
@@ -86,13 +85,13 @@ bool client_read(Client *client) {
 
         if (c == '\n') {
             if (!client->input_discarding) {
-                // Trim trailing whitespace
+                // Trim trailing
                 while (client->input_length > 0 &&
                        isspace((unsigned char)client->input_buffer[client->input_length - 1])) {
                     client->input_length--;
                 }
 
-                // Trim leading whitespace
+                // Trim leading
                 size_t leading = 0;
                 while (leading < client->input_length &&
                        isspace((unsigned char)client->input_buffer[leading])) {
@@ -108,13 +107,12 @@ bool client_read(Client *client) {
                 client->input_length -= leading;
                 client->input_buffer[client->input_length] = '\0';
                 client->input_line_end = client->input_length;
-
-                return true; // One line per tick
+                return true; // One line complete, ready for processing
             } else {
+                // Discarded line ends — reset and prepare for next
                 client->input_length = 0;
                 client->input_discarding = false;
             }
-
             continue;
         }
 
@@ -122,9 +120,10 @@ bool client_read(Client *client) {
             continue;
         }
 
-        if (client->input_length < CLIENT_MAX_LINE - 1) {
+        if (client->input_length < CLIENT_MAX_LINE) {
             client->input_buffer[client->input_length++] = c;
         } else {
+            // Line is too long, discard until '\n'
             client->input_length = 0;
             client->input_discarding = true;
         }
@@ -132,6 +131,7 @@ bool client_read(Client *client) {
 
     return true;
 }
+
 
 bool client_write(Client *client, const char *text) {
     return buffer_append_str(client->output, text);
