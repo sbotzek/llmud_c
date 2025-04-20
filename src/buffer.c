@@ -1,5 +1,6 @@
 #include "buffer.h"
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -101,5 +102,31 @@ bool buffer_appendf(Buffer *buf, const char *fmt, ...) {
     bool success = buffer_append(buf, dynamic, (size_t)needed);
     free(dynamic);
     return success;
+}
+
+void buffer_trim(Buffer *buf) {
+    if (!buf || buf->length == 0) return;
+
+    size_t start = 0;
+    size_t end = buf->length;
+
+    // Trim leading
+    while (start < end && isspace((unsigned char)buf->data[start])) {
+        start++;
+    }
+
+    // Trim trailing
+    while (end > start && isspace((unsigned char)buf->data[end - 1])) {
+        end--;
+    }
+
+    size_t new_len = end - start;
+
+    if (start > 0 && new_len > 0) {
+        memmove(buf->data, buf->data + start, new_len);
+    }
+
+    buf->data[new_len] = '\0';
+    buf->length = new_len;
 }
 
