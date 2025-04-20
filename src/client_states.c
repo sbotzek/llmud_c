@@ -1,44 +1,33 @@
 #include "client_states.h"
+#include "client.h"
 #include <string.h>
-#include <stdio.h>
 
-// Trims whitespace in place (null-terminates as well)
-static void trim_trailing_whitespace(char *str) {
-    size_t len = strlen(str);
-    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' ||
-                       str[len - 1] == ' '  || str[len - 1] == '\t')) {
-        str[--len] = '\0';
-    }
-}
+// ----- State Handlers -----
 
-static void handle_menu_input(Client *client, Buffer *input) {
-    buffer_append(input, "", 0); // ensure null-terminated
-    trim_trailing_whitespace(input->data);
-
-    if (strcmp(input->data, "play") == 0) {
+static void handle_menu_input(Client *client, const char *line) {
+    if (strcmp(line, "play") == 0) {
         client_state_enter_playing(client);
-    } else if (strcmp(input->data, "create") == 0) {
+    } else if (strcmp(line, "create") == 0) {
         client_state_enter_character_creation(client);
     } else {
         client_write(client, "Menu: type 'play' or 'create'\n");
     }
-
-    buffer_clear(input);
 }
 
-static void handle_playing_input(Client *client, Buffer *input) {
-    buffer_append(input, "", 0);
-    trim_trailing_whitespace(input->data);
-
-    buffer_appendf(client->output, "You are playing. You typed: %s\n", input->data);
-    buffer_clear(input);
+static void handle_playing_input(Client *client, const char *line) {
+    client_write(client, "You are playing. You typed: ");
+    client_write(client, line);
+    client_write(client, "\n");
 }
 
-static void handle_character_creation_input(Client *client, Buffer *input) {
+static void handle_character_creation_input(Client *client, const char *line) {
+    (void)line;
+
     client_write(client, "Character creation not implemented yet. Returning to menu...\n");
-    buffer_clear(input);
     client_state_enter_menu(client);
 }
+
+// ----- State Transitions -----
 
 void client_state_enter_menu(Client *client) {
     client->state = CLIENT_STATE_MENU;
@@ -63,4 +52,3 @@ void client_state_enter_character_creation(Client *client) {
 
     client_write(client, "Beginning character creation...\n");
 }
-

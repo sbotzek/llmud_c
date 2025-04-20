@@ -6,6 +6,7 @@
 #include "buffer.h"
 
 #define CLIENT_NAME_LENGTH 64
+#define CLIENT_MAX_LINE    1024  // Max length for a single input line
 
 typedef struct Client Client;
 
@@ -15,8 +16,7 @@ typedef enum {
     CLIENT_STATE_CHARACTER_CREATION
 } ClientState;
 
-// Input handler now takes Buffer*
-typedef void (*InputHandler)(Client *client, Buffer *input);
+typedef void (*InputHandler)(Client *client, const char *line);
 
 struct Client {
     int socket_fd;
@@ -24,9 +24,16 @@ struct Client {
     char ip_string[INET_ADDRSTRLEN];
     bool connected;
 
-    Buffer *input;
+    // Input handling
+    char input_buffer[CLIENT_MAX_LINE]; // Current input buffer
+    size_t input_length;                // Number of chars in input_buffer
+    size_t input_line_end;             // Index of '\0' that terminates a ready line, or 0 if none
+    bool input_discarding;             // True if we're discarding a too-long line
+
+    // Output handling (assumed you're still using a dynamic buffer here)
     Buffer *output;
 
+    // Client state
     char name[CLIENT_NAME_LENGTH];
     void *user_data;
 
