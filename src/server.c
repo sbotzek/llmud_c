@@ -21,14 +21,6 @@ static int make_socket_nonblocking(int fd) {
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-// Removes trailing newline, carriage return, spaces, and tabs
-static void trim_trailing_whitespace(char *str) {
-    size_t len = strlen(str);
-    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r' || str[len - 1] == ' ' || str[len - 1] == '\t')) {
-        str[--len] = '\0';
-    }
-}
-
 bool server_start(int port) {
     int listener_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (listener_fd < 0) {
@@ -140,8 +132,7 @@ bool server_start(int port) {
                     continue;
                 }
 
-                trim_trailing_whitespace(client->input_buffer);
-                client_handle_input(client, client->input_buffer);
+                client_handle_input(client);
                 client_flush(client);
             }
         }

@@ -1,6 +1,7 @@
 #include "client.h"
 #include "buffer.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -54,8 +55,25 @@ bool client_read(Client *client) {
         return false;
     }
 
-    return buffer_append(client->input, temp, (size_t)bytes);
+    // Trim leading and trailing whitespace
+    size_t start = 0;
+    while (start < (size_t)bytes && isspace((unsigned char)temp[start])) {
+        start++;
+    }
+
+    size_t end = (size_t)bytes;
+    while (end > start && isspace((unsigned char)temp[end - 1])) {
+        end--;
+    }
+
+    size_t trimmed_len = end - start;
+    if (trimmed_len == 0) {
+        return true; // Don't append empty strings
+    }
+
+    return buffer_append(client->input, temp + start, trimmed_len);
 }
+
 
 bool client_write(Client *client, const char *text) {
     return buffer_append_str(client->output, text);

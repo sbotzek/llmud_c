@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -std=c11 -I./src
+CFLAGS = -Wall -Wextra -Werror -std=c11 -Iinclude
 SRC_DIR = src
 OBJ_DIR = obj
 TARGET = mud
