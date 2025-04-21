@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "log.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -62,6 +63,7 @@ bool buffer_append(Buffer *buf, const char *data, size_t size) {
     memcpy(buf->data + buf->length, data, size);
     buf->length += size;
     buf->data[buf->length] = '\0'; // always null-terminate
+
     return true;
 }
 
@@ -74,34 +76,39 @@ void buffer_clear(Buffer *buf) {
     if (buf) buf->length = 0;
 }
 
-bool buffer_appendf(Buffer *buf, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
+bool buffer_vappendf(Buffer *buf, const char *fmt, va_list args) {
+    va_list args_copy;
+    va_copy(args_copy, args);
 
-    // First, try to print into a temporary stack buffer
     char temp[512];
-    int needed = vsnprintf(temp, sizeof(temp), fmt, args);
-    va_end(args);
+    int needed = vsnprintf(temp, sizeof(temp), fmt, args_copy);
+    va_end(args_copy);
 
-    if (needed < 0) return false;
+    if (needed < 0) {
+        return false;
+    }
 
-    // If it fits in temp, just append
     if ((size_t)needed < sizeof(temp)) {
         return buffer_append(buf, temp, (size_t)needed);
     }
 
-    // Otherwise, allocate space and try again
+    // Fallback to heap allocation if it doesn't fit in the temp buffer
     size_t size = (size_t)needed + 1;
     char *dynamic = malloc(size);
     if (!dynamic) return false;
 
-    va_start(args, fmt);
     vsnprintf(dynamic, size, fmt, args);
-    va_end(args);
-
     bool success = buffer_append(buf, dynamic, (size_t)needed);
     free(dynamic);
     return success;
+}
+
+bool buffer_appendf(Buffer *buf, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    bool result = buffer_vappendf(buf, fmt, args);
+    va_end(args);
+    return result;
 }
 
 void buffer_trim(Buffer *buf) {

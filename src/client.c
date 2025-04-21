@@ -214,8 +214,31 @@ static bool client_process_input_byte(Client *client, unsigned char byte, char *
 
 
 bool client_write(Client *client, const char *text) {
-    return buffer_append_str(client->output, text);
+    return buffer_append(client->output, text, strlen(text));
 }
+
+bool client_writeln(Client *client, const char *text) {
+    return buffer_append(client->output, text, strlen(text)) &&
+           buffer_append(client->output, "\r\n", 2);
+}
+
+bool client_writef(Client *client, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    bool result = buffer_vappendf(client->output, fmt, args);
+    va_end(args);
+    return result;
+}
+
+bool client_writelnf(Client *client, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    bool result = buffer_vappendf(client->output, fmt, args);
+    va_end(args);
+    if (!result) return false;
+    return buffer_append(client->output, "\r\n", 2);
+}
+
 
 bool client_flush(Client *client) {
     if (client->output->length == 0) return true;

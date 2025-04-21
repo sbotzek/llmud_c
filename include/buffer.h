@@ -31,6 +31,7 @@ bool buffer_reserve(Buffer *buf, size_t needed_capacity);
 
 // Safe printf-style append to the buffer
 bool buffer_appendf(Buffer *buf, const char *fmt, ...);
+bool buffer_vappendf(Buffer *buf, const char *fmt, va_list args);
 
 // Trims leading and trailing whitespace from the buffer
 void buffer_trim(Buffer *buf);
