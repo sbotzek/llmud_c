@@ -4,12 +4,16 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include "buffer.h"
+#include "actor.h"
 
 #define CLIENT_NAME_LENGTH 64
 #define CLIENT_MAX_LINE    1024  // Max length for a single input line
 #define CLIENT_INPUT_BUFFER_SIZE (CLIENT_MAX_LINE * 2) // must be at least 2x CLIENT_MAX_LINE
 
+typedef struct Actor Actor;
 typedef struct Client Client;
+typedef struct World World;
+typedef struct GameRules GameRules;
 
 typedef enum {
     CLIENT_STATE_MENU,
@@ -17,9 +21,9 @@ typedef enum {
     CLIENT_STATE_CHARACTER_CREATION
 } ClientState;
 
-typedef void (*InputHandler)(Client *client, const char *line);
+typedef void (*InputHandler)(GameRules *game_rules, World *world, Client *client, const char *line);
 
-struct Client {
+typedef struct Client {
     int socket_fd;
     struct sockaddr_in address;
     char ip_string[INET_ADDRSTRLEN];
@@ -41,7 +45,9 @@ struct Client {
 
     ClientState state;
     InputHandler input_handler;
-};
+
+    Actor *actor;
+} Client;
 
 // Lifecycle
 Client *client_create(int socket_fd, struct sockaddr_in *addr);
@@ -54,7 +60,7 @@ bool client_flush(Client *client);
 bool client_is_disconnected(const Client *client);
 
 // Input delegation
-void client_handle_input(Client *client);
+void client_handle_input(Client *client, GameRules *rules, World *world);
 
 #endif // CLIENT_H
 

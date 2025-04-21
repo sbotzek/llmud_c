@@ -1,11 +1,12 @@
 #ifndef CLIENT_STATES_H
 #define CLIENT_STATES_H
 
-#include "client.h"
+typedef struct World World;
+typedef struct GameRules GameRules;
+typedef struct Client Client;
 
-void client_state_enter_menu(Client *client);
-void client_state_enter_playing(Client *client);
-void client_state_enter_character_creation(Client *client);
+void client_state_enter_menu(GameRules *rules, World *world, Client *client);
+void client_state_enter_playing(GameRules *rules, World *world, Client *client);
+void client_state_enter_character_creation(GameRules *rules, World *world, Client *client);
 
-#endif // CLIENT_STATES_H
-
+#endif

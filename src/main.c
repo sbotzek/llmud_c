@@ -1,13 +1,19 @@
-#include <stdio.h>
 #include "server.h"
+#include "world.h"
+#include "game_rules.h"
+#include "game_process.h"
+#include "game_processes.h"
 
-int main() {
-    int port = 4000;
+int main(void) {
+    World world;
+    GameRules rules;
 
-    if (!server_start(port)) {
-        fprintf(stderr, "Failed to start server on port %d\n", port);
-        return 1;
-    }
+    const GameProcess processes[] = {
+        telnet_process(),
+        // add more here
+    };
 
-    return 0;
+    size_t process_count = sizeof(processes) / sizeof(GameProcess);
+
+    return server_run(&rules, &world, processes, process_count) ? 0 : 1;
 }

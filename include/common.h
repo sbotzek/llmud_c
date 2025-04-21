@@ -16,10 +16,12 @@
         } \
     } while (0)
 
-#define CHECK_MSG(cond, msg) \
+#define CHECK_MSG(cond, ...) \
     do { \
         if (!(cond)) { \
-            fprintf(stderr, "[CHECK FAILED] %s\n", (msg)); \
+            fprintf(stderr, "[CHECK FAILED] "); \
+            fprintf(stderr, __VA_ARGS__); \
+            fprintf(stderr, "\n"); \
             fprintf(stderr, "  Condition: %s\n", #cond); \
             fprintf(stderr, "  Location : %s:%d\n", __FILE__, __LINE__); \
             abort(); \

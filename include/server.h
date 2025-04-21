@@ -2,9 +2,12 @@
 #define SERVER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
-// Starts the MUD server on the specified port.
-// Returns true on success, false on failure.
-bool server_start(int port);
+typedef struct GameRules GameRules;
+typedef struct World World;
+typedef struct GameProcess GameProcess;
 
-#endif // SERVER_H
+bool server_run(GameRules *rules, World *world, const GameProcess *processes, size_t process_count);
+
+#endif

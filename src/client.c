@@ -40,11 +40,25 @@ Client *client_create(int socket_fd, struct sockaddr_in *addr) {
     client->state = CLIENT_STATE_MENU;
     client->input_handler = NULL;
 
+    client->actor = NULL;
+
     return client;
 }
 
 void client_destroy(Client *client) {
     if (!client) return;
+
+    if (client->actor) {
+        if (client->actor->client == client) {
+            client->actor->client = NULL;
+        } else {
+            fprintf(stderr, "[FATAL] Client %s is linked to actor %u, but actor->client != client!\n",
+                client->ip_string, client->actor->id);
+            abort();
+        }
+
+        client->actor = NULL;
+    }
 
     close(client->socket_fd);
 
@@ -162,13 +176,13 @@ bool client_is_disconnected(const Client *client) {
     return !client->connected;
 }
 
-void client_handle_input(Client *client) {
+void client_handle_input(Client *client, GameRules *rules, World *world) {
     if (client->input_line_end == 0) {
         return; // No complete line to handle
     }
 
     if (client->input_handler) {
-        client->input_handler(client, client->input_buffer);
+        client->input_handler(rules, world, client, client->input_buffer);
     }
 
     // Shift remaining data (if any) left
