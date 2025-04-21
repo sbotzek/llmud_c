@@ -1,6 +1,6 @@
 #include "world.h"
 #include "client.h"
-#include "common.h"
+#include "macros.h"
 #include "log.h"
 
 static bool warned_actor_count = false;

@@ -1,6 +1,6 @@
 #include "client_states.h"
 #include "client.h"
-#include "common.h"
+#include "macros.h"
 #include "world.h"
 #include "game_rules.h"
 

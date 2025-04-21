@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef MACROS_H
+#define MACROS_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,4 +28,4 @@
         } \
     } while (0)
 
-#endif // COMMON_H
+#endif // MACROS_H

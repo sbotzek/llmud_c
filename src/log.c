@@ -1,6 +1,6 @@
 #include "log.h"
 #include <stdarg.h>
-#include "common.h"
+#include "macros.h"
 
 void log_internal(int level, const char *level_str,
                   const char *file, int line,

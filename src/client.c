@@ -1,6 +1,6 @@
 #include "client.h"
 #include "buffer.h"
-#include "common.h"
+#include "macros.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
