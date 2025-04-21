@@ -16,6 +16,15 @@ typedef struct World World;
 typedef struct GameRules GameRules;
 
 typedef enum {
+    TELNET_STATE_DATA,
+    TELNET_STATE_IAC,
+    TELNET_STATE_COMMAND,
+    TELNET_STATE_SB,
+    TELNET_STATE_SB_DATA,
+    TELNET_STATE_SB_IAC
+} TelnetState;
+
+typedef enum {
     CLIENT_STATE_MENU,
     CLIENT_STATE_PLAYING,
     CLIENT_STATE_CHARACTER_CREATION
@@ -45,6 +54,9 @@ typedef struct Client {
 
     ClientState state;
     InputHandler input_handler;
+
+    TelnetState telnet_state;
+    unsigned char telnet_command; // temporarily holds DO/WILL/etc.
 
     Actor *actor;
 } Client;

@@ -1,6 +1,7 @@
 #include "client.h"
 #include "buffer.h"
 #include "macros.h"
+#include "log.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -11,6 +12,17 @@
 
 #define CLIENT_INITIAL_INPUT_CAPACITY 1024
 #define CLIENT_INITIAL_OUTPUT_CAPACITY 2048
+
+// Telnet command codes
+#define TELNET_IAC   255  // "Interpret As Command"
+#define TELNET_DONT  254
+#define TELNET_DO    253
+#define TELNET_WONT  252
+#define TELNET_WILL  251
+#define TELNET_SB    250  // Begin subnegotiation
+#define TELNET_SE    240  // End subnegotiation
+
+static bool client_process_input_byte(Client *client, unsigned char byte, char *out_char);
 
 Client *client_create(int socket_fd, struct sockaddr_in *addr) {
     Client *client = malloc(sizeof(Client));
@@ -90,7 +102,11 @@ bool client_read(Client *client) {
     }
 
     for (ssize_t i = 0; i < bytes; ++i) {
-        char c = temp[i];
+        char c;
+        if (!client_process_input_byte(client, (unsigned char)temp[i], &c)) {
+            continue; // not a normal input character
+        }
+
         if (c == '\r') continue;
 
         if (c == '\n') {
@@ -140,6 +156,60 @@ bool client_read(Client *client) {
     }
 
     return true;
+}
+
+static bool client_process_input_byte(Client *client, unsigned char byte, char *out_char) {
+    switch (client->telnet_state) {
+        case TELNET_STATE_DATA:
+            if (byte == TELNET_IAC) {
+                client->telnet_state = TELNET_STATE_IAC;
+                return false;
+            } else {
+                *out_char = byte;
+                return true;
+            }
+
+        case TELNET_STATE_IAC:
+            if (byte == TELNET_IAC) {
+                client->telnet_state = TELNET_STATE_DATA;
+                *out_char = TELNET_IAC;
+                return true;
+            } else if (byte == TELNET_DO || byte == TELNET_DONT ||
+                       byte == TELNET_WILL || byte == TELNET_WONT) {
+                client->telnet_command = byte;
+                client->telnet_state = TELNET_STATE_COMMAND;
+            } else if (byte == TELNET_SB) {
+                client->telnet_state = TELNET_STATE_SB;
+            } else {
+                client->telnet_state = TELNET_STATE_DATA;
+            }
+            return false;
+
+        case TELNET_STATE_COMMAND:
+            log_trace("Telnet command %u %u", client->telnet_command, byte);
+            client->telnet_state = TELNET_STATE_DATA;
+            return false;
+
+        case TELNET_STATE_SB:
+            client->telnet_state = TELNET_STATE_SB_DATA;
+            return false;
+
+        case TELNET_STATE_SB_DATA:
+            if (byte == TELNET_IAC) {
+                client->telnet_state = TELNET_STATE_SB_IAC;
+            }
+            return false;
+
+        case TELNET_STATE_SB_IAC:
+            if (byte == TELNET_SE) {
+                client->telnet_state = TELNET_STATE_DATA;
+            } else {
+                client->telnet_state = TELNET_STATE_SB_DATA;
+            }
+            return false;
+    }
+
+    return false;
 }
 
 
