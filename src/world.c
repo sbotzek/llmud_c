@@ -1,6 +1,7 @@
 #include "world.h"
 #include "client.h"
 #include "common.h"
+#include "log.h"
 
 static bool warned_actor_count = false;
 
@@ -23,10 +24,8 @@ Actor *world_create_actor(World *world) {
     if (!warned_actor_count &&
         world->actor_count >= (MAX_ACTORS * 9) / 10) {
         warned_actor_count = true;
-        fprintf(stderr, "[WARN] Actor count nearing capacity: %zu/%d\n",
-                world->actor_count, MAX_ACTORS);
+        log_warn("Actor count nearing capacity: %zu/%d", world->actor_count, MAX_ACTORS);
     }
-
 
     CHECK_MSG(world->actor_count < MAX_ACTORS,
               "cannot create actor: actor_count=%zu, max=%d",

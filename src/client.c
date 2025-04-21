@@ -1,5 +1,6 @@
 #include "client.h"
 #include "buffer.h"
+#include "common.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -49,21 +50,16 @@ void client_destroy(Client *client) {
     if (!client) return;
 
     if (client->actor) {
-        if (client->actor->client == client) {
-            client->actor->client = NULL;
-        } else {
-            fprintf(stderr, "[FATAL] Client %s is linked to actor %u, but actor->client != client!\n",
-                client->ip_string, client->actor->id);
-            abort();
-        }
+        CHECK_MSG(client->actor->client == client,
+            "Client %s is linked to actor %u, but actor->client != client",
+            client->ip_string, client->actor->id);
 
+        client->actor->client = NULL;
         client->actor = NULL;
     }
 
     close(client->socket_fd);
-
     buffer_destroy(client->output);
-
     free(client);
 }
 

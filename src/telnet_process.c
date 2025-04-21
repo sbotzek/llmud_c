@@ -1,10 +1,10 @@
 #include "game_process.h"
 #include "client_states.h"
 #include "world.h"
+#include "log.h"
 #include "game_rules.h"
 #include "client.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -37,11 +37,9 @@ GameProcess telnet_process(void) {
 // --- Main process tick ---
 static void telnet_tick(GameRules *rules, World *world) {
     if (listener_fd < 0) {
-        // Create and bind listener socket
         listener_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listener_fd < 0) {
-            perror("socket");
-            return;
+            log_fatal("socket() failed: %s", strerror(errno));
         }
 
         int opt = 1;
@@ -55,13 +53,10 @@ static void telnet_tick(GameRules *rules, World *world) {
         if (bind(listener_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
             listen(listener_fd, 10) < 0 ||
             make_socket_nonblocking(listener_fd) < 0) {
-            perror("listener setup");
-            close(listener_fd);
-            listener_fd = -1;
-            return;
+            log_fatal("Failed to initialize listener: %s", strerror(errno));
         }
 
-        printf("[telnet] Listening on port %d...\n", TELNET_PORT);
+        log_info("Listening on port %d...", TELNET_PORT);
     }
 
     accept_new_connections(rules, world);
@@ -79,7 +74,7 @@ static void telnet_tick(GameRules *rules, World *world) {
     }
 
     if (poll(fds, nfds, 0) < 0) {
-        perror("poll");
+        log_error("poll() failed: %s", strerror(errno));
         return;
     }
 
@@ -93,7 +88,7 @@ static void telnet_tick(GameRules *rules, World *world) {
         }
 
         if (!client_read(client)) {
-            printf("[telnet] Client disconnected: %s\n", client->ip_string);
+            log_info("Client disconnected: %s", client->ip_string);
             client_destroy(client);
             clients[i] = NULL;
             ++slot;
@@ -104,7 +99,6 @@ static void telnet_tick(GameRules *rules, World *world) {
         client_flush(client);
         ++slot;
     }
-
 }
 
 // --- Helper: accept new clients ---
@@ -116,13 +110,13 @@ static void accept_new_connections(GameRules *rules, World *world) {
         int client_fd = accept(listener_fd, (struct sockaddr *)&client_addr, &addrlen);
         if (client_fd < 0) {
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                perror("accept");
+                log_error("accept() failed: %s", strerror(errno));
             }
             break;
         }
 
         if (make_socket_nonblocking(client_fd) < 0) {
-            perror("make_socket_nonblocking (client)");
+            log_error("Failed to set client socket non-blocking: %s", strerror(errno));
             close(client_fd);
             continue;
         }
@@ -136,19 +130,19 @@ static void accept_new_connections(GameRules *rules, World *world) {
         }
 
         if (slot == -1) {
-            printf("[telnet] Too many clients\n");
+            log_warn("Too many clients");
             close(client_fd);
             continue;
         }
 
         clients[slot] = client_create(client_fd, &client_addr);
         if (!clients[slot]) {
-            perror("client_create");
+            log_error("client_create failed for fd %d", client_fd);
             close(client_fd);
             continue;
         }
 
-        printf("[telnet] Client connected: %s\n", clients[slot]->ip_string);
+        log_info("Client connected: %s", clients[slot]->ip_string);
         client_state_enter_menu(rules, world, clients[slot]);
         client_flush(clients[slot]);
     }
