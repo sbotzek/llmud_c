@@ -2,13 +2,12 @@
 #include "server.h"
 #include "game_process.h"
 #include "world.h"
+#include "tick.h"
 #include "game_rules.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-
-#define TICK_INTERVAL_MS 250
 
 static void sleep_until_next_tick(struct timespec *next_tick) {
     struct timespec now;

@@ -9,6 +9,7 @@ int main(void) {
     GameRules rules;
 
     const GameProcess processes[] = {
+        event_cleanup_subscriptions_process(),
         telnet_process(),
         // add more here
     };
