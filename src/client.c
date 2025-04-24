@@ -37,7 +37,7 @@ Client *client_create(int socket_fd, struct sockaddr_in *addr) {
 
     // Initialize input state
     client->input_length = 0;
-    client->input_line_end = 0;
+    client->input_line_ready = false;
     client->input_discarding = false;
 
     // Initialize output buffer
@@ -76,11 +76,11 @@ void client_destroy(Client *client) {
 }
 
 bool client_read(Client *client) {
-    if (client->input_line_end != 0) {
+    if (client->input_line_ready) {
         return true; // Already have a full line
     }
 
-    char temp[CLIENT_MAX_LINE + 1]; // safe size for one full line (+ \0)
+    char temp[CLIENT_MAX_LINE + 1]; // safe size for one full line (+ '\0')
     size_t read_limit;
 
     if (client->input_discarding) {
@@ -89,9 +89,9 @@ bool client_read(Client *client) {
         size_t space_left = CLIENT_INPUT_BUFFER_SIZE - client->input_length;
         read_limit = space_left > sizeof(temp) ? sizeof(temp) : space_left;
         if (read_limit == 0) {
-            client->input_length = 0;
+            client->input_length     = 0;
             client->input_discarding = true;
-            read_limit = sizeof(temp);
+            read_limit               = sizeof(temp);
         }
     }
 
@@ -132,11 +132,13 @@ bool client_read(Client *client) {
 
                 client->input_length -= leading;
                 client->input_buffer[client->input_length] = '\0';
-                client->input_line_end = client->input_length;
+
+                // **Only change here:**
+                client->input_line_ready = true;
                 return true; // One line complete, ready for processing
             } else {
                 // Discarded line ends — reset and prepare for next
-                client->input_length = 0;
+                client->input_length     = 0;
                 client->input_discarding = false;
             }
             continue;
@@ -150,13 +152,14 @@ bool client_read(Client *client) {
             client->input_buffer[client->input_length++] = c;
         } else {
             // Line is too long, discard until '\n'
-            client->input_length = 0;
+            client->input_length     = 0;
             client->input_discarding = true;
         }
     }
 
     return true;
 }
+
 
 static bool client_process_input_byte(Client *client, unsigned char byte, char *out_char) {
     switch (client->telnet_state) {
@@ -265,8 +268,9 @@ bool client_is_disconnected(const Client *client) {
     return !client->connected;
 }
 
-void client_handle_input(Client *client, GameRules *rules, World *world) {
-    if (client->input_line_end == 0) {
+void client_handle_input(Client *client, GameRules *rules, World *world)
+{
+    if (!client->input_line_ready) {
         return; // No complete line to handle
     }
 
@@ -274,25 +278,27 @@ void client_handle_input(Client *client, GameRules *rules, World *world) {
         client->input_handler(rules, world, client, client->input_buffer);
     }
 
-    // Shift remaining data (if any) left
-    size_t consumed = client->input_line_end + 1; // skip over null terminator
+    // Recompute how many bytes we consumed (line + '\0')
+    size_t consumed = strlen(client->input_buffer) + 1;
     size_t remaining = client->input_length > consumed
         ? client->input_length - consumed
         : 0;
 
     if (remaining > 0) {
-        memmove(client->input_buffer, client->input_buffer + consumed, remaining);
+        memmove(client->input_buffer,
+                client->input_buffer + consumed,
+                remaining);
     }
 
-    client->input_length = remaining;
-    client->input_line_end = 0;
-    client->input_discarding = false;
+    client->input_length      = remaining;
+    client->input_discarding  = false;
+    client->input_line_ready  = false;    // clear the flag
 
-    // Look for next newline
+    // Look for next newline and re-arm the flag
     for (size_t i = 0; i < client->input_length; ++i) {
         if (client->input_buffer[i] == '\n') {
-            client->input_buffer[i] = '\0';
-            client->input_line_end = i;
+            client->input_buffer[i]   = '\0';
+            client->input_line_ready  = true;
             break;
         }
     }

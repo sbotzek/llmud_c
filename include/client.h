@@ -1,10 +1,10 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <netinet/in.h>
-#include <stdbool.h>
 #include "buffer.h"
 #include "actor.h"
+#include <netinet/in.h>
+#include <stdbool.h>
 
 #define CLIENT_NAME_LENGTH 64
 #define CLIENT_MAX_LINE    1024  // Max length for a single input line
@@ -42,7 +42,7 @@ typedef struct Client {
     //
     char input_buffer[CLIENT_INPUT_BUFFER_SIZE]; // Current input buffer
     size_t input_length;                // Number of chars in input_buffer
-    size_t input_line_end;             // Index of '\0' that terminates a ready line, or 0 if none
+    bool input_line_ready;             // Whether an input line is ready for processing
     bool input_discarding;             // True if we're discarding a too-long line
 
     // Output handling (assumed you're still using a dynamic buffer here)
