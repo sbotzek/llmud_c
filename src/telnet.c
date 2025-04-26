@@ -1,9 +1,11 @@
+#include "client.h"
+
 #include "game_process.h"
 #include "client_states.h"
 #include "world.h"
 #include "log.h"
 #include "game_rules.h"
-#include "client.h"
+#include "macros.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -94,7 +96,6 @@ static void accept_new_connections(GameRules *rules, World *world) {
 
         log_info("Client connected: %s", clients[slot]->ip_string);
         client_state_enter_menu(rules, world, clients[slot]);
-        client_flush(clients[slot]);
     }
 }
 
@@ -140,7 +141,18 @@ void telnet_read_tick(GameRules *rules, World *world) {
         }
 
         client_handle_input(client, rules, world);
-        client_flush(client);
         ++slot;
+    }
+}
+
+
+void client_flush_tick(GameRules *rules, World *world) {
+    UNUSED(rules);
+    UNUSED(world);
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        Client *client = clients[i];
+        if (!client) continue;
+
+        client_flush(client);
     }
 }
