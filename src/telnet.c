@@ -21,21 +21,11 @@ static int listener_fd = -1;
 static Client *clients[MAX_CLIENTS] = {0};
 
 // --- Forward declarations ---
-static void telnet_listen_tick(GameRules *rules, World *world);
-static void telnet_read_tick(GameRules *rules, World *world);
 static void accept_new_connections(GameRules *rules, World *world);
 static int make_socket_nonblocking(int fd);
 
-GameProcess telnet_listen_process(void) {
-    return (GameProcess){
-        .name = "telnet.listen",
-        .tick = telnet_listen_tick,
-        .frequency = 1
-    };
 
-}
-
-static void telnet_listen_tick(GameRules *rules, World *world) {
+void telnet_listen_tick(GameRules *rules, World *world) {
     if (listener_fd < 0) {
         listener_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listener_fd < 0) {
@@ -114,17 +104,7 @@ static int make_socket_nonblocking(int fd) {
 }
 
 
-// --- GameProcess factory ---
-GameProcess telnet_read_process(void) {
-    return (GameProcess){
-        .name = "telnet.read",
-        .tick = telnet_read_tick,
-        .frequency = 1
-    };
-}
-
-// --- Main process tick ---
-static void telnet_read_tick(GameRules *rules, World *world) {
+void telnet_read_tick(GameRules *rules, World *world) {
     struct pollfd fds[MAX_CLIENTS];
     int nfds = 0;
 

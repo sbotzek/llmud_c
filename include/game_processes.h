@@ -3,8 +3,9 @@
 
 #include "game_process.h"
 
-GameProcess telnet_listen_process(void);
-GameProcess telnet_read_process(void);
-GameProcess event_cleanup_subscriptions_process(void);
+void event_cleanup_tick(GameRules *rules, World *world);
+
+void telnet_listen_tick(GameRules *rules, World *world);
+void telnet_read_tick(GameRules *rules, World *world);
 
 #endif // GAME_PROCESSES_H

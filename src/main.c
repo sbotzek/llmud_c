@@ -9,9 +9,9 @@ int main(void) {
     GameRules rules;
 
     const GameProcess processes[] = {
-        event_cleanup_subscriptions_process(),
-        telnet_listen_process(),
-        telnet_read_process(),
+        {.name="event.cleanup", .tick=event_cleanup_tick, .frequency=1},
+        {.name="telnet.listen", .tick=telnet_listen_tick, .frequency=1},
+        {.name="telnet.read",   .tick=telnet_read_tick,   .frequency=1},
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);

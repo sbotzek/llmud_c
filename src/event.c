@@ -66,7 +66,13 @@ void event_emit(EventType type, void *payload) {
     }
 }
 
-void event_cleanup_subscriptions(void) {
+typedef struct GameRules GameRules;
+typedef struct World World;
+
+void event_cleanup_tick(GameRules *rules, World *world) {
+    UNUSED(rules);
+    UNUSED(world);
+
     for (EventType type = EVENT_NONE; type < MAX_EVENT; ++type) {
         Subscription **pp = &subscribers[type];
         while (*pp) {

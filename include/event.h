@@ -17,6 +17,5 @@ extern const SubscribeToken INVALID_SUBSCRIBE_TOKEN;
 SubscribeToken event_subscribe(EventType type, void (*fn)(EventType type, void* payload));
 void event_unsubscribe(SubscribeToken token);
 void event_emit(EventType type, void *payload);
-void event_cleanup_subscriptions(void);
 
 #endif // EVENT_H
