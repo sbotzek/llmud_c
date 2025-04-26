@@ -23,6 +23,7 @@
 #define TELNET_SE    240  // End subnegotiation
 
 static bool client_process_input_byte(Client *client, unsigned char byte, char *out_char);
+static bool write_all(int fd, const char *buf, size_t len);
 
 Client *client_create(int socket_fd, struct sockaddr_in *addr) {
     Client *client = malloc(sizeof(Client));
@@ -220,11 +221,6 @@ bool client_write(Client *client, const char *text) {
     return buffer_append(client->output, text, strlen(text));
 }
 
-bool client_writeln(Client *client, const char *text) {
-    return buffer_append(client->output, text, strlen(text)) &&
-           buffer_append(client->output, "\r\n", 2);
-}
-
 bool client_writef(Client *client, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -233,36 +229,50 @@ bool client_writef(Client *client, const char *fmt, ...) {
     return result;
 }
 
-bool client_writelnf(Client *client, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    bool result = buffer_vappendf(client->output, fmt, args);
-    va_end(args);
-    if (!result) return false;
-    return buffer_append(client->output, "\r\n", 2);
-}
-
-
 bool client_flush(Client *client) {
-    if (client->output->length == 0) return true;
+    Buffer *b = client->output;
+    char *data = b->data;
+    char *end  = data + b->length;
 
-    ssize_t bytes = write(client->socket_fd, client->output->data, client->output->length);
-    if (bytes <= 0) {
-        client->connected = false;
-        return false;
+    // 1) Scan from data→end, flushing segments around lone '\n'
+    char *seg_start = data;
+    for (char *p = data; p < end; ++p) {
+        if (*p == '\n' && (p == data || *(p - 1) != '\r')) {
+            // 2a) write the bytes before the '\n'
+            if (!write_all(client->socket_fd, seg_start, p - seg_start) ||
+                // 2b) inject CRLF
+                !write_all(client->socket_fd, "\r\n", 2)) {
+                client->connected = false;
+                return false;
+            }
+            seg_start = p + 1;
+        }
     }
 
-    if ((size_t)bytes < client->output->length) {
-        memmove(client->output->data,
-                client->output->data + bytes,
-                client->output->length - bytes);
+    // 2) Write any trailing bytes after the last processed '\n'
+    if (seg_start < end) {
+        if (!write_all(client->socket_fd, seg_start, end - seg_start)) {
+            client->connected = false;
+            return false;
+        }
     }
 
-    client->output->length -= (size_t)bytes;
-    client->output->data[client->output->length] = '\0';
+    // 3) All data sent → clear the buffer
+    b->length = 0;
+    b->data[0] = '\0';
     return true;
 }
 
+// Helper: keep writing until all bytes are sent or an error occurs
+static bool write_all(int fd, const char *buf, size_t len) {
+    size_t sent = 0;
+    while (sent < len) {
+        ssize_t n = write(fd, buf + sent, len - sent);
+        if (n <= 0) return false;
+        sent += (size_t)n;
+    }
+    return true;
+}
 
 bool client_is_disconnected(const Client *client) {
     return !client->connected;

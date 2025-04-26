@@ -69,9 +69,7 @@ void client_destroy(Client *client);
 bool client_read(Client *client);
 
 bool client_write(Client *client, const char *text);
-bool client_writeln(Client *client, const char *text);
 bool client_writef(Client *client, const char *fmt, ...);
-bool client_writelnf(Client *client, const char *fmt, ...);
 
 bool client_flush(Client *client);
 bool client_is_disconnected(const Client *client);

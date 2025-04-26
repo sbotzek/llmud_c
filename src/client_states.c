@@ -51,7 +51,7 @@ void client_state_enter_character_creation(GameRules *rules, World *world, Clien
     client->state = CLIENT_STATE_CHARACTER_CREATION;
     client->input_handler = (InputHandler)handle_character_creation_input;
 
-    client_writeln(client, "Character creation not implemented. Type 'back' to return.");
+    client_write(client, "Character creation not implemented. Type 'back' to return.\n");
 }
 
 static void handle_menu_input(GameRules *rules, World *world, Client *client, const char *line) {
@@ -60,7 +60,7 @@ static void handle_menu_input(GameRules *rules, World *world, Client *client, co
     } else if (strcmp(line, "new") == 0) {
         client_state_enter_character_creation(rules, world, client);
     } else {
-        client_writeln(client, "Unknown command. Type 'play' or 'new'.");
+        client_write(client, "Unknown command. Type 'play' or 'new'.\n");
     }
 }
 
@@ -70,18 +70,18 @@ static void handle_playing_input(GameRules *rules, World *world, Client *client,
             world_remove_actor(world, client->actor);
         }
 
-        client_writeln(client, "You leave the game world.");
+        client_write(client, "You leave the game world.\n");
         client_state_enter_menu(rules, world, client);
         return;
     }
 
-    client_writelnf(client, "You say: %s", line);
+    client_writef(client, "You say: %s\n", line);
 }
 
 static void handle_character_creation_input(GameRules *rules, World *world, Client *client, const char *line) {
     if (strcmp(line, "back") == 0) {
         client_state_enter_menu(rules, world, client);
     } else {
-        client_writeln(client, "Character creation not implemented. Type 'back' to return.");
+        client_write(client, "Character creation not implemented. Type 'back' to return.\n");
     }
 }
