@@ -21,21 +21,21 @@ static int listener_fd = -1;
 static Client *clients[MAX_CLIENTS] = {0};
 
 // --- Forward declarations ---
-static int make_socket_nonblocking(int fd);
+static void telnet_listen_tick(GameRules *rules, World *world);
+static void telnet_read_tick(GameRules *rules, World *world);
 static void accept_new_connections(GameRules *rules, World *world);
-static void telnet_tick(GameRules *rules, World *world);
+static int make_socket_nonblocking(int fd);
 
-// --- GameProcess factory ---
-GameProcess telnet_process(void) {
+GameProcess telnet_listen_process(void) {
     return (GameProcess){
-        .name = "telnet",
-        .tick = telnet_tick,
+        .name = "telnet.listen",
+        .tick = telnet_listen_tick,
         .frequency = 1
     };
+
 }
 
-// --- Main process tick ---
-static void telnet_tick(GameRules *rules, World *world) {
+static void telnet_listen_tick(GameRules *rules, World *world) {
     if (listener_fd < 0) {
         listener_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listener_fd < 0) {
@@ -60,48 +60,8 @@ static void telnet_tick(GameRules *rules, World *world) {
     }
 
     accept_new_connections(rules, world);
-
-    struct pollfd fds[MAX_CLIENTS];
-    int nfds = 0;
-
-    for (int i = 0; i < MAX_CLIENTS; ++i) {
-        if (!clients[i]) continue;
-
-        fds[nfds].fd = clients[i]->socket_fd;
-        fds[nfds].events = POLLIN;
-        fds[nfds].revents = 0;
-        ++nfds;
-    }
-
-    if (poll(fds, nfds, 0) < 0) {
-        log_error("poll() failed: %s", strerror(errno));
-        return;
-    }
-
-    for (int i = 0, slot = 0; i < MAX_CLIENTS; ++i) {
-        Client *client = clients[i];
-        if (!client) continue;
-
-        if (!(fds[slot].revents & POLLIN)) {
-            ++slot;
-            continue;
-        }
-
-        if (!client_read(client)) {
-            log_info("Client disconnected: %s", client->ip_string);
-            client_destroy(client);
-            clients[i] = NULL;
-            ++slot;
-            continue;
-        }
-
-        client_handle_input(client, rules, world);
-        client_flush(client);
-        ++slot;
-    }
 }
 
-// --- Helper: accept new clients ---
 static void accept_new_connections(GameRules *rules, World *world) {
     struct sockaddr_in client_addr;
     socklen_t addrlen = sizeof(client_addr);
@@ -148,8 +108,59 @@ static void accept_new_connections(GameRules *rules, World *world) {
     }
 }
 
-// --- Helper: make socket non-blocking ---
 static int make_socket_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     return (flags < 0) ? -1 : fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+
+// --- GameProcess factory ---
+GameProcess telnet_read_process(void) {
+    return (GameProcess){
+        .name = "telnet.read",
+        .tick = telnet_read_tick,
+        .frequency = 1
+    };
+}
+
+// --- Main process tick ---
+static void telnet_read_tick(GameRules *rules, World *world) {
+    struct pollfd fds[MAX_CLIENTS];
+    int nfds = 0;
+
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        if (!clients[i]) continue;
+
+        fds[nfds].fd = clients[i]->socket_fd;
+        fds[nfds].events = POLLIN;
+        fds[nfds].revents = 0;
+        ++nfds;
+    }
+
+    if (poll(fds, nfds, 0) < 0) {
+        log_error("poll() failed: %s", strerror(errno));
+        return;
+    }
+
+    for (int i = 0, slot = 0; i < MAX_CLIENTS; ++i) {
+        Client *client = clients[i];
+        if (!client) continue;
+
+        if (!(fds[slot].revents & POLLIN)) {
+            ++slot;
+            continue;
+        }
+
+        if (!client_read(client)) {
+            log_info("Client disconnected: %s", client->ip_string);
+            client_destroy(client);
+            clients[i] = NULL;
+            ++slot;
+            continue;
+        }
+
+        client_handle_input(client, rules, world);
+        client_flush(client);
+        ++slot;
+    }
 }

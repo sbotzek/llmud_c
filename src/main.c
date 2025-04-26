@@ -10,8 +10,8 @@ int main(void) {
 
     const GameProcess processes[] = {
         event_cleanup_subscriptions_process(),
-        telnet_process(),
-        // add more here
+        telnet_listen_process(),
+        telnet_read_process(),
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);
