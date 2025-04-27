@@ -29,9 +29,9 @@ void telnet_conn_destroy(TelnetConn *conn);
 // — I/O
 bool telnet_conn_read(TelnetConn *conn);
 
-bool telnet_conn_write(TelnetConn *conn, const char *text);
-bool telnet_conn_writef(TelnetConn *conn, const char *fmt, ...);
-bool telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args);
+void telnet_conn_write(TelnetConn *conn, const char *text);
+void telnet_conn_writef(TelnetConn *conn, const char *fmt, ...);
+void telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args);
 
 bool telnet_conn_flush(TelnetConn *conn);
 bool telnet_conn_is_disconnected(const TelnetConn *conn);

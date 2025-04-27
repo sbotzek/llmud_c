@@ -28,9 +28,7 @@ static bool write_all(int fd, const char *buf, size_t len);
 
 TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
     TelnetConn *conn = malloc(sizeof(TelnetConn));
-    if (!conn) {
-        return NULL;
-    }
+    CHECK_MSG(conn != NULL, "telnet_conn_create: malloc failed");
 
     conn->socket_fd = socket_fd;
     conn->address = *addr;
@@ -71,96 +69,6 @@ void telnet_conn_destroy(TelnetConn *conn) {
     buffer_destroy(conn->output);
     free(conn);
 }
-
-/*
-bool telnet_conn_read(TelnetConn *conn) {
-    if (conn->input_line_ready) {
-        return true; // Already have a full line
-    }
-
-    char temp[TELNET_CONN_MAX_LINE + 1]; // safe size for one full line (+ '\0')
-    size_t read_limit;
-
-    if (conn->input_discarding) {
-        read_limit = sizeof(temp);
-    } else {
-        size_t space_left = TELNET_CONN_INPUT_BUFFER_SIZE - conn->input_length;
-        read_limit = space_left > sizeof(temp) ? sizeof(temp) : space_left;
-        if (read_limit == 0) {
-            conn->input_length     = 0;
-            conn->input_discarding = true;
-            read_limit               = sizeof(temp);
-        }
-    }
-
-    ssize_t bytes = read(conn->socket_fd, temp, read_limit);
-    if (bytes <= 0) {
-        conn->connected = false;
-        return false;
-    }
-
-    for (ssize_t i = 0; i < bytes; ++i) {
-        char c;
-        if (!process_input_byte(conn, (unsigned char)temp[i], &c)) {
-            continue; // not a normal input character
-        }
-
-        if (c == '\r') continue;
-
-        if (c == '\n') {
-            if (!conn->input_discarding) {
-                // Trim trailing
-                while (conn->input_length > 0 &&
-                       isspace((unsigned char)conn->input_buffer[conn->input_length - 1])) {
-                    conn->input_length--;
-                }
-
-                // Trim leading
-                size_t leading = 0;
-                while (leading < conn->input_length &&
-                       isspace((unsigned char)conn->input_buffer[leading])) {
-                    leading++;
-                }
-
-                if (leading > 0 && leading < conn->input_length) {
-                    memmove(conn->input_buffer,
-                            conn->input_buffer + leading,
-                            conn->input_length - leading);
-                }
-
-                conn->input_length -= leading;
-                conn->input_buffer[conn->input_length] = '\0';
-
-                // **Only change here:**
-                conn->input_line_ready = true;
-                return true; // One line complete, ready for processing
-            } else {
-                // Discarded line ends — reset and prepare for next
-                conn->input_length     = 0;
-                conn->input_discarding = false;
-            }
-            continue;
-        }
-
-        if (conn->input_discarding) {
-            continue;
-        }
-
-        if (conn->input_length < TELNET_CONN_MAX_LINE) {
-            conn->input_buffer[conn->input_length++] = c;
-        } else {
-            // Line is too long, discard until '\n'
-            conn->input_length     = 0;
-            conn->input_discarding = true;
-        }
-    }
-
-    log_trace("telnet_conn_read: ip [%s]: read [%u] bytes, input length [%u]",
-              conn->ip_string, bytes, conn->input_length);
-
-    return true;
-}
-*/
 
 bool telnet_conn_read(TelnetConn *conn) {
     if (conn->input_line_ready) {
@@ -306,20 +214,19 @@ static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_c
     return false;
 }
 
-bool telnet_conn_write(TelnetConn *conn, const char *text) {
-    return buffer_append(conn->output, text, strlen(text));
+void telnet_conn_write(TelnetConn *conn, const char *text) {
+    buffer_append(conn->output, text, strlen(text));
 }
 
-bool telnet_conn_writef(TelnetConn *conn, const char *fmt, ...) {
+void telnet_conn_writef(TelnetConn *conn, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    bool result = buffer_vappendf(conn->output, fmt, args);
+    buffer_vappendf(conn->output, fmt, args);
     va_end(args);
-    return result;
 }
 
-bool telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args) {
-    return buffer_vappendf(conn->output, fmt, args);
+void telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args) {
+    buffer_vappendf(conn->output, fmt, args);
 }
 
 bool telnet_conn_flush(TelnetConn *conn) {
