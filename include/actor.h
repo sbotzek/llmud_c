@@ -6,12 +6,12 @@
 typedef unsigned int ActorID;
 #define INVALID_ACTOR_ID ((ActorID)-1)
 
-typedef struct Client Client;
+typedef struct Player Player;
 
 typedef struct Actor {
     ActorID id;
     bool alive;
-    Client *client;
+    Player *player;
     // Add other component pointers here
 } Actor;
 

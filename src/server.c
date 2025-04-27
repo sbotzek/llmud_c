@@ -1,8 +1,10 @@
 #define _POSIX_C_SOURCE 200112L
 #include "server.h"
+
 #include "game_process.h"
 #include "world.h"
 #include "tick.h"
+#include "log.h"
 #include "game_rules.h"
 
 #include <stdio.h>
@@ -38,8 +40,10 @@ bool server_run(GameRules *rules, World *world, const GameProcess *processes, si
     clock_gettime(CLOCK_MONOTONIC, &next_tick);
 
     while (1) {
+        log_trace("server_run: tick [%d]", tick);
         for (size_t i = 0; i < process_count; ++i) {
             if (tick % processes[i].frequency == 0) {
+                log_trace("server_run: tick [%d], process [%s]", tick, processes[i].name);
                 processes[i].tick(rules, world);
             }
         }

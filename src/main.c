@@ -9,10 +9,11 @@ int main(void) {
     GameRules rules;
 
     const GameProcess processes[] = {
-        {.name="event.cleanup", .tick=event_cleanup_tick, .frequency=1},
-        {.name="telnet.listen", .tick=telnet_listen_tick, .frequency=1},
-        {.name="telnet.read",   .tick=telnet_read_tick,   .frequency=1},
-        {.name="client.flush",  .tick=client_flush_tick,  .frequency=1},
+        {.name="event.cleanup",          .tick=event_cleanup_tick,         .frequency=1},
+        {.name="telnet.listen",          .tick=telnet_listen_tick,         .frequency=1},
+        {.name="telnet.read",            .tick=telnet_read_tick,           .frequency=1},
+        {.name="telnet.process_input",   .tick=telnet_process_input_tick,  .frequency=1},
+        {.name="telnet.flush",           .tick=telnet_flush_tick,          .frequency=1},
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);

@@ -1,5 +1,6 @@
 #include "world.h"
-#include "client.h"
+
+#include "player.h"
 #include "macros.h"
 #include "log.h"
 
@@ -52,13 +53,13 @@ bool world_remove_actor(World *world, Actor *actor) {
 
     actor->alive = false;
 
-    // Slightly dirty: World knows about Client to clear mutual link.
-    if (actor->client) {
-        CHECK_MSG(actor->client->actor == actor,
-                  "actor-client mismatch: actor->id=%u, client->actor->id=%u",
+    // Slightly dirty: World knows about player to clear mutual link.
+    if (actor->player) {
+        CHECK_MSG(actor->player->actor == actor,
+                  "actor-player mismatch: actor->id=%u, player->actor->id=%u",
                   actor->id,
-                  actor->client->actor ? actor->client->actor->id : INVALID_ACTOR_ID);
-        actor->client->actor = NULL;
+                  actor->player->actor ? actor->player->actor->id : INVALID_ACTOR_ID);
+        actor->player->actor = NULL;
     }
 
     return true;
