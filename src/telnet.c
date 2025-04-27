@@ -113,7 +113,7 @@ void telnet_read_tick(GameRules *rules, World *world) {
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];
-        if (!conn) continue;
+        if (!conn || !conn->connected) continue;
         fds[nfds].fd     = conn->socket_fd;
         fds[nfds].events = POLLIN;
         fds[nfds].revents= 0;
@@ -127,7 +127,7 @@ void telnet_read_tick(GameRules *rules, World *world) {
 
     for (int i = 0, slot = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];
-        if (!conn) continue;
+        if (!conn || !conn->connected) continue;
 
         if (!(fds[slot].revents & POLLIN)) {
             ++slot;
@@ -170,7 +170,7 @@ void telnet_flush_tick(GameRules *rules, World *world) {
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];
-        if (!conn) continue;
+        if (!conn || !conn->connected) continue;
 
         telnet_conn_flush(conn);
         if (!conn->connected) {

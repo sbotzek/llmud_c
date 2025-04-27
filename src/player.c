@@ -17,14 +17,14 @@ void player_destroy(Player *player) {
 
 void player_send(Player *player, const char *text) {
     CHECK(player != NULL);
-    if (player->conn == NULL) return;
+    if (player->conn == NULL || !player->conn->connected) return;
 
     telnet_conn_write(player->conn, text);
 }
 
 void player_sendf(Player *player, const char *fmt, ...) {
     CHECK(player != NULL);
-    if (player->conn == NULL) return;
+    if (player->conn == NULL || !player->conn->connected) return;
 
     va_list args;
     va_start(args, fmt);
@@ -35,7 +35,6 @@ void player_sendf(Player *player, const char *fmt, ...) {
 
 void player_handle_input(Player *player, GameRules *rules, World *world, const char *line) {
     CHECK(player != NULL);
-    CHECK(player->conn != NULL);
 
     player->input_handler(rules, world, player, line);
 }
