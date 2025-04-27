@@ -1,3 +1,4 @@
+// main.c
 #include "server.h"
 #include "world.h"
 #include "game_rules.h"
