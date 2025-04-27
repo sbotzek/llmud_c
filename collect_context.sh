@@ -25,13 +25,12 @@ INCLUDE_PATHS=("$HEADER_DIR" "$SRC_DIR")
 
 include_header() {
   local hdr="$1"
-  # avoid duplicates
   for seen in "${INCLUDED_HDRS[@]}"; do
     [[ "$seen" == "$hdr" ]] && return
   done
   INCLUDED_HDRS+=("$hdr")
 
-  # 1) dump the header without its guards / pragma once
+  # Dump header minus include-guards and pragma once
   awk '
     /^\s*#\s*(ifndef|define|endif)\b/ { next }
     /^\s*#\s*pragma\s+once/        { next }
@@ -39,17 +38,17 @@ include_header() {
   ' "$hdr"
   echo
 
-  # 2) recurse into its local includes
+  # Recurse into its own local includes
   local dir; dir=$(dirname "$hdr")
   ( grep -E '^\s*#\s*include\s*"[^"]+"' "$hdr" || true ) | \
     sed -E 's/^\s*#\s*include\s*"([^"]+)".*/\1/' | \
     while read -r sub; do
-      # try same folder
+      # try same directory
       if [[ -f "$dir/$sub" ]]; then
         include_header "$dir/$sub"
         continue
       fi
-      # then search include paths
+      # otherwise search include paths
       for p in "${INCLUDE_PATHS[@]}"; do
         if [[ -f "$p/$sub" ]]; then
           include_header "$p/$sub"
@@ -62,7 +61,6 @@ include_header() {
 ########################################
 # 1) LOCATE & PRINT FUNCTION BODY      #
 ########################################
-
 start_line=$(
   grep -n -E "^[[:space:]]*.*\b${FUNC}[[:space:]]*\(.*\)[[:space:]]*\{" "$SRC" \
     | head -n1 | cut -d: -f1 || true
@@ -72,7 +70,7 @@ if [[ -z "$start_line" ]]; then
   exit 1
 fi
 
-echo "/* --- FUNCTION ${FUNC}() --- */"
+echo "/* --- FUNCTION ${FUNC}() in $SRC_REL --- */"
 awk -v start="$start_line" '
   NR < start { next }
   {
@@ -85,9 +83,32 @@ awk -v start="$start_line" '
 echo
 
 ########################################
-# 2) STRUCTS & PROTOTYPES BEFORE FUNC  #
+# 2) PRINT RAW #INCLUDE LINES          #
 ########################################
+echo "/* --- INCLUDES in $SRC_REL --- */"
+grep -E '^\s*#\s*include\s*("[^"]+"|<[^>]+>)' "$SRC"
+echo
 
+########################################
+# 3) DUMP LOCAL HEADER CONTENTS        #
+########################################
+echo "/* --- LOCAL HEADER CONTENTS (recursively) --- */"
+# only the double-quoted includes
+( grep -E '^\s*#\s*include\s*"[^"]+"' "$SRC" || true ) | \
+  sed -E 's/^\s*#\s*include\s*"([^"]+)".*/\1/' | \
+  while read -r hdr; do
+    for p in "${INCLUDE_PATHS[@]}"; do
+      if [[ -f "$p/$hdr" ]]; then
+        include_header "$p/$hdr"
+        break
+      fi
+    done
+  done
+echo
+
+########################################
+# 4) STRUCTS & PROTOTYPES BEFORE FUNC  #
+########################################
 echo "/* --- DECLARATIONS before $FUNC (line $start_line) --- */"
 awk -v end="$start_line" '
   BEGIN { in_struct=0; brace=0 }
@@ -106,21 +127,3 @@ awk -v end="$start_line" '
     }
   }
 ' "$SRC"
-
-
-########################################
-# 3) DUMP ALL LOCAL HEADER CONTENTS    #
-########################################
-
-echo "/* --- INCLUDES from $SRC_REL (full contents) --- */"
-( grep -E '^\s*#\s*include\s*"[^"]+"' "$SRC" || true ) | \
-  sed -E 's/^\s*#\s*include\s*"([^"]+)".*/\1/' | \
-  while read -r hdr; do
-    for p in "${INCLUDE_PATHS[@]}"; do
-      if [[ -f "$p/$hdr" ]]; then
-        include_header "$p/$hdr"
-        break
-      fi
-    done
-  done
-echo
