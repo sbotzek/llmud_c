@@ -3,9 +3,9 @@
 #include "macros.h"
 #include "log.h"
 #include "player.h"
-
 #include <arpa/inet.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,13 +15,13 @@
 #define TELNET_CONN_INITIAL_OUTPUT_CAPACITY 2048
 
 // Telnet command codes
-#define TELNET_IAC   255  // "Interpret As Command"
+#define TELNET_IAC   255
 #define TELNET_DONT  254
 #define TELNET_DO    253
 #define TELNET_WONT  252
 #define TELNET_WILL  251
-#define TELNET_SB    250  // Begin subnegotiation
-#define TELNET_SE    240  // End subnegotiation
+#define TELNET_SB    250
+#define TELNET_SE    240
 
 static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_char);
 static bool write_all(int fd, const char *buf, size_t len);
@@ -30,17 +30,15 @@ TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
     TelnetConn *conn = malloc(sizeof(TelnetConn));
     CHECK_MSG(conn != NULL, "telnet_conn_create: malloc failed");
 
-    conn->socket_fd = socket_fd;
-    conn->address = *addr;
+    conn->socket_fd       = socket_fd;
+    conn->address         = *addr;
     inet_ntop(AF_INET, &(addr->sin_addr), conn->ip_string, sizeof(conn->ip_string));
-    conn->connected = true;
+    conn->connected       = true;
 
-    // Initialize input state
-    conn->input_length = 0;
-    conn->input_line_ready = false;
-    conn->input_discarding = false;
+    conn->input_length    = 0;
+    conn->input_line_ready= false;
+    conn->input_discarding= false;
 
-    // Initialize output buffer
     conn->output = buffer_create(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
     if (!conn->output) {
         free(conn);
@@ -70,9 +68,9 @@ void telnet_conn_destroy(TelnetConn *conn) {
     free(conn);
 }
 
-bool telnet_conn_read(TelnetConn *conn) {
+void telnet_conn_read(TelnetConn *conn) {
     if (conn->input_line_ready) {
-        return true; // Already have a full line
+        return;
     }
 
     char temp[TELNET_CONN_MAX_LINE + 1];
@@ -93,7 +91,7 @@ bool telnet_conn_read(TelnetConn *conn) {
     ssize_t bytes = read(conn->socket_fd, temp, read_limit);
     if (bytes <= 0) {
         conn->connected = false;
-        return false;
+        return;
     }
 
     log_trace("telnet_conn_read: ip [%s]: read [%u] bytes", conn->ip_string, bytes);
@@ -101,20 +99,18 @@ bool telnet_conn_read(TelnetConn *conn) {
     for (ssize_t i = 0; i < bytes; ++i) {
         char c;
         if (!process_input_byte(conn, (unsigned char)temp[i], &c)) {
-            continue; // not a normal input character
+            continue;
         }
 
         if (c == '\r') continue;
 
         if (c == '\n') {
             if (!conn->input_discarding) {
-                // Trim trailing
                 while (conn->input_length > 0 &&
                        isspace((unsigned char)conn->input_buffer[conn->input_length - 1])) {
                     conn->input_length--;
                 }
 
-                // Trim leading
                 size_t leading = 0;
                 while (leading < conn->input_length &&
                        isspace((unsigned char)conn->input_buffer[leading])) {
@@ -128,16 +124,10 @@ bool telnet_conn_read(TelnetConn *conn) {
                 }
                 conn->input_length -= leading;
 
-                // — only change starts here —
-                // separate this command with a single '\n' instead of NUL
-                conn->input_buffer[conn->input_length] = '\n';
-                conn->input_length++;
-                // — only change ends here —
-
+                conn->input_buffer[conn->input_length++] = '\n';
                 conn->input_line_ready = true;
-                return true; // One line complete
+                return;
             } else {
-                // Discarded line ends — reset and prepare for next
                 conn->input_length     = 0;
                 conn->input_discarding = false;
             }
@@ -151,12 +141,66 @@ bool telnet_conn_read(TelnetConn *conn) {
         if (conn->input_length < TELNET_CONN_MAX_LINE) {
             conn->input_buffer[conn->input_length++] = c;
         } else {
-            // Line is too long, discard until '\n'
             conn->input_length     = 0;
             conn->input_discarding = true;
         }
     }
+}
 
+void telnet_conn_write(TelnetConn *conn, const char *text) {
+    buffer_append(conn->output, text, strlen(text));
+}
+
+void telnet_conn_writef(TelnetConn *conn, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    buffer_vappendf(conn->output, fmt, args);
+    va_end(args);
+}
+
+void telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args) {
+    buffer_vappendf(conn->output, fmt, args);
+}
+
+void telnet_conn_flush(TelnetConn *conn) {
+    Buffer *b = conn->output;
+    if (b->length == 0) return;
+
+    log_trace("telnet_flush_tick: ip [%s]: flushing [%u] bytes", conn->ip_string, b->length);
+
+    char *data = b->data;
+    char *end  = data + b->length;
+    char *seg_start = data;
+
+    for (char *p = data; p < end; ++p) {
+        if (*p == '\n' && (p == data || *(p - 1) != '\r')) {
+            if (!write_all(conn->socket_fd, seg_start, p - seg_start) ||
+                !write_all(conn->socket_fd, "\r\n", 2)) {
+                conn->connected = false;
+                return;
+            }
+            seg_start = p + 1;
+        }
+    }
+
+    if (seg_start < end) {
+        if (!write_all(conn->socket_fd, seg_start, end - seg_start)) {
+            conn->connected = false;
+            return;
+        }
+    }
+
+    b->length = 0;
+    b->data[0] = '\0';
+}
+
+static bool write_all(int fd, const char *buf, size_t len) {
+    size_t sent = 0;
+    while (sent < len) {
+        ssize_t n = write(fd, buf + sent, len - sent);
+        if (n <= 0) return false;
+        sent += (size_t)n;
+    }
     return true;
 }
 
@@ -179,7 +223,7 @@ static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_c
             } else if (byte == TELNET_DO || byte == TELNET_DONT ||
                        byte == TELNET_WILL || byte == TELNET_WONT) {
                 conn->telnet_command = byte;
-                conn->telnet_state = TELNET_STATE_COMMAND;
+                conn->telnet_state   = TELNET_STATE_COMMAND;
             } else if (byte == TELNET_SB) {
                 conn->telnet_state = TELNET_STATE_SB;
             } else {
@@ -210,76 +254,7 @@ static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_c
             }
             return false;
     }
-
     return false;
-}
-
-void telnet_conn_write(TelnetConn *conn, const char *text) {
-    buffer_append(conn->output, text, strlen(text));
-}
-
-void telnet_conn_writef(TelnetConn *conn, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    buffer_vappendf(conn->output, fmt, args);
-    va_end(args);
-}
-
-void telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args) {
-    buffer_vappendf(conn->output, fmt, args);
-}
-
-bool telnet_conn_flush(TelnetConn *conn) {
-    Buffer *b = conn->output;
-    if (b->length == 0) return true;
-
-    log_trace("telnet_flush_tick: ip [%s]: flushing [%u] bytes", conn->ip_string, b->length);
-
-    char *data = b->data;
-    char *end  = data + b->length;
-
-    // 1) Scan from data→end, flushing segments around lone '\n'
-    char *seg_start = data;
-    for (char *p = data; p < end; ++p) {
-        if (*p == '\n' && (p == data || *(p - 1) != '\r')) {
-            // 2a) write the bytes before the '\n'
-            if (!write_all(conn->socket_fd, seg_start, p - seg_start) ||
-                // 2b) inject CRLF
-                !write_all(conn->socket_fd, "\r\n", 2)) {
-                conn->connected = false;
-                return false;
-            }
-            seg_start = p + 1;
-        }
-    }
-
-    // 2) Write any trailing bytes after the last processed '\n'
-    if (seg_start < end) {
-        if (!write_all(conn->socket_fd, seg_start, end - seg_start)) {
-            conn->connected = false;
-            return false;
-        }
-    }
-
-    // 3) All data sent → clear the buffer
-    b->length = 0;
-    b->data[0] = '\0';
-    return true;
-}
-
-// Helper: keep writing until all bytes are sent or an error occurs
-static bool write_all(int fd, const char *buf, size_t len) {
-    size_t sent = 0;
-    while (sent < len) {
-        ssize_t n = write(fd, buf + sent, len - sent);
-        if (n <= 0) return false;
-        sent += (size_t)n;
-    }
-    return true;
-}
-
-bool telnet_conn_is_disconnected(const TelnetConn *conn) {
-    return !conn->connected;
 }
 
 bool telnet_conn_next_line(TelnetConn *conn, char *out) {

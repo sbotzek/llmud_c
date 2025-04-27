@@ -19,11 +19,9 @@
 #define MAX_CONNECTIONS 128
 #define TELNET_PORT 4000
 
-// --- Static process state ---
 static int listener_fd = -1;
 static TelnetConn *connections[MAX_CONNECTIONS] = {0};
 
-// --- Forward declarations ---
 static void accept_new_connections(void);
 static int make_socket_nonblocking(int fd);
 
@@ -41,7 +39,7 @@ void telnet_listen_tick(GameRules *rules, World *world) {
 
         struct sockaddr_in addr = {0};
         addr.sin_family = AF_INET;
-        addr.sin_port = htons(TELNET_PORT);
+        addr.sin_port   = htons(TELNET_PORT);
         addr.sin_addr.s_addr = INADDR_ANY;
 
         if (bind(listener_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
@@ -114,11 +112,11 @@ void telnet_read_tick(GameRules *rules, World *world) {
     int nfds = 0;
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
-        if (!connections[i]) continue;
-
-        fds[nfds].fd = connections[i]->socket_fd;
+        TelnetConn *conn = connections[i];
+        if (!conn) continue;
+        fds[nfds].fd     = conn->socket_fd;
         fds[nfds].events = POLLIN;
-        fds[nfds].revents = 0;
+        fds[nfds].revents= 0;
         ++nfds;
     }
 
@@ -136,7 +134,8 @@ void telnet_read_tick(GameRules *rules, World *world) {
             continue;
         }
 
-        if (!telnet_conn_read(conn)) {
+        telnet_conn_read(conn);
+        if (!conn->connected) {
             log_info("disconnected: %s", conn->ip_string);
             telnet_conn_destroy(conn);
             connections[i] = NULL;
@@ -152,9 +151,8 @@ void telnet_process_input_tick(GameRules *rules, World *world) {
     char line[TELNET_CONN_MAX_LINE + 1];
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
-        if (!connections[i]) continue;
-
         TelnetConn *conn = connections[i];
+        if (!conn || !conn->connected) continue;
 
         if (!telnet_conn_next_line(conn, line)) {
             log_trace("telnet_process_input_tick: ip [%s]: no input", conn->ip_string);
@@ -174,7 +172,8 @@ void telnet_flush_tick(GameRules *rules, World *world) {
         TelnetConn *conn = connections[i];
         if (!conn) continue;
 
-        if (!telnet_conn_flush(conn)) {
+        telnet_conn_flush(conn);
+        if (!conn->connected) {
             log_info("disconnected: %s", conn->ip_string);
             telnet_conn_destroy(conn);
             connections[i] = NULL;
