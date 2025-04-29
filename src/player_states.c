@@ -123,16 +123,14 @@ void player_state_enter_character_creation(GameRules *rules, World *world, Playe
 }
 
 /* — Static helper */
-
 static bool account_username_exists(World *world, const char *username) {
-    for (size_t i = 0; i < world->actor_count; ++i) {
-        Actor *a = &world->actors[i];
-        if (a->player && a->player->account &&
-            strcmp(a->player->account->username, username) == 0) {
-            return true;
-        }
+    UNUSED(world);  /* no longer used */
+    Account *acct = account_load(username);
+    if (!acct) {
+        return false;
     }
-    return false;
+    account_destroy(acct);
+    return true;
 }
 
 /* — Static input handlers */
