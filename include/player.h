@@ -2,7 +2,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "actor.h"
 #include <stddef.h>    // for size_t
 #include <stdbool.h>
 
@@ -12,11 +11,16 @@ typedef struct GameRules   GameRules;
 typedef struct World       World;
 typedef struct TelnetConn  TelnetConn;
 typedef struct Player      Player;
+typedef struct Actor       Actor;
+typedef struct Account     Account;
 
 typedef enum {
     PLAYER_STATE_MENU,
     PLAYER_STATE_PLAYING,
-    PLAYER_STATE_CHARACTER_CREATION
+    PLAYER_STATE_CHARACTER_CREATION,
+    PLAYER_STATE_ACCOUNT_CREATE,
+    PLAYER_STATE_ACCOUNT_LOGIN,
+    PLAYER_STATE_ACCOUNT_MENU
 } PlayerState;
 
 typedef void (*InputHandler)(
@@ -28,11 +32,12 @@ typedef void (*InputHandler)(
 
 struct Player {
     char          name[PLAYER_NAME_LENGTH];
-    void         *user_data;
 
     PlayerState   state;
+    void         *state_data;
     InputHandler  input_handler;
 
+    Account      *account;
     Actor        *actor;
 
     /* link back to the I/O layer */
@@ -40,14 +45,14 @@ struct Player {
 };
 
 // — Lifecycle
-Player *player_create();
-void    player_destroy(Player *player);
+Player *player_create(void);
+void     player_destroy(Player *player);
 
 // — Input
-void    player_handle_input(Player *player, GameRules *rules, World *world, const char *line);
+void     player_handle_input(Player *player, GameRules *rules, World *world, const char *line);
 
-// — Output helpers (wrap telnet_conn_)
-void    player_send   (Player *player, const char *text);
-void    player_sendf  (Player *player, const char *fmt, ...);
+// — Output helpers
+void     player_send(Player *player, const char *text);
+void     player_sendf(Player *player, const char *fmt, ...);
 
 #endif // PLAYER_H
