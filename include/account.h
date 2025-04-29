@@ -38,4 +38,18 @@ bool account_check_password(const Account *account, const char *password);
  */
 bool account_validate_username(const char *username);
 
+/**
+ * Save this account to
+ *     DATA_DIR "/accounts/<username>.acct"
+ * Aborts on any I/O or allocation error.
+ */
+void account_save(const Account *account);
+
+/**
+ * Load an account from
+ *     DATA_DIR "/accounts/<username>.acct"
+ * Returns NULL if the file doesn't exist.  Aborts on OOM or malformed file.
+ */
+Account *account_load(const char *username);
+
 #endif // ACCOUNT_H

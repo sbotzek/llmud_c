@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
-// Context for account creation
+/* Context for account creation */
 typedef enum {
     ACC_CREATE_USERNAME,
     ACC_CREATE_PASSWORD,
@@ -22,11 +22,11 @@ typedef enum {
 
 typedef struct {
     AccountCreateStep step;
-    char username[ACCOUNT_USERNAME_BUF_SIZE];
-    char *password;
+    char    username[ACCOUNT_USERNAME_BUF_SIZE];
+    char   *password;
 } AccountCreateContext;
 
-// Context for account login
+/* Context for account login */
 typedef enum {
     ACC_LOGIN_USERNAME,
     ACC_LOGIN_PASSWORD
@@ -34,14 +34,14 @@ typedef enum {
 
 typedef struct {
     AccountLoginStep step;
-    char username[ACCOUNT_USERNAME_BUF_SIZE];
-    Account *account;
+    char             username[ACCOUNT_USERNAME_BUF_SIZE];
+    Account         *account;
 } AccountLoginContext;
 
-// Check if a username is already in use by any logged-in player
+/* Check if a username is already in use by any logged-in player */
 static bool account_username_exists(World *world, const char *username);
 
-// Input handlers
+/* Input handlers */
 static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line);
 static void handle_account_create_input(GameRules *rules, World *world, Player *player, const char *line);
 static void handle_account_login_input(GameRules *rules, World *world, Player *player, const char *line);
@@ -49,15 +49,13 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
 static void handle_playing_input(GameRules *rules, World *world, Player *player, const char *line);
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line);
 
-// — Public state entry functions
+/* — Public state entry functions */
 
 void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
     UNUSED(world);
-
     player->state = PLAYER_STATE_MENU;
     player->input_handler = handle_menu_input;
-
     player_send(player,
         "\n"
         "Welcome to the game!\n"
@@ -68,42 +66,34 @@ void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
 void player_state_enter_account_create(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
     UNUSED(world);
-
     player->state = PLAYER_STATE_ACCOUNT_CREATE;
     player->input_handler = handle_account_create_input;
-
     AccountCreateContext *ctx = malloc(sizeof *ctx);
     CHECK_MSG(ctx, "Out of memory");
     ctx->step = ACC_CREATE_USERNAME;
     ctx->password = NULL;
     player->state_data = ctx;
-
     player_send(player, "Enter username: ");
 }
 
 void player_state_enter_account_login(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
     UNUSED(world);
-
     player->state = PLAYER_STATE_ACCOUNT_LOGIN;
     player->input_handler = handle_account_login_input;
-
     AccountLoginContext *ctx = malloc(sizeof *ctx);
     CHECK_MSG(ctx, "Out of memory");
     ctx->step = ACC_LOGIN_USERNAME;
     ctx->account = NULL;
     player->state_data = ctx;
-
     player_send(player, "Enter username: ");
 }
 
 void player_state_enter_account_menu(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
     UNUSED(world);
-
     player->state = PLAYER_STATE_ACCOUNT_MENU;
     player->input_handler = handle_account_menu_input;
-
     player_send(player,
         "Account menu:\n"
         "Type 'create' to create a character, 'play <name>' to enter the game, or 'quit' to disconnect.\n"
@@ -112,33 +102,27 @@ void player_state_enter_account_menu(GameRules *rules, World *world, Player *pla
 
 void player_state_enter_playing(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
-
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
-
     Actor *actor = world_create_actor(world);
     if (!actor) {
         player_send(player, "World is full. Try again later.\n");
         return;
     }
-
     actor->player = player;
     player->actor = actor;
-
     player_send(player, "You have entered the world.\n");
 }
 
 void player_state_enter_character_creation(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
     UNUSED(world);
-
     player->state = PLAYER_STATE_CHARACTER_CREATION;
     player->input_handler = handle_character_creation_input;
-
     player_send(player, "Enter character name (a-z only): ");
 }
 
-// — Static helper
+/* — Static helper */
 
 static bool account_username_exists(World *world, const char *username) {
     for (size_t i = 0; i < world->actor_count; ++i) {
@@ -151,7 +135,7 @@ static bool account_username_exists(World *world, const char *username) {
     return false;
 }
 
-// — Static input handlers
+/* — Static input handlers */
 
 static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line) {
     if (strcmp(line, "create") == 0) {
@@ -170,7 +154,7 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
         if (!account_validate_username(line)) {
             player_send(player, "Invalid username. Enter username: ");
         } else if (account_username_exists(world, line)) {
-            player_send(player, "Username already exists. Enter username: ");
+            player_send(player, "Username already in use. Enter username: ");
         } else {
             strncpy(ctx->username, line, ACCOUNT_USERNAME_BUF_SIZE);
             ctx->step = ACC_CREATE_PASSWORD;
@@ -197,6 +181,7 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             player_send(player, "Passwords do not match. Enter password: ");
         } else {
             Account *acct = account_create(ctx->username, ctx->password);
+            account_save(acct);
             free(ctx->password);
             free(ctx);
             player->state_data = NULL;
@@ -214,21 +199,15 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
     case ACC_LOGIN_USERNAME:
         if (!account_validate_username(line)) {
             player_send(player, "Invalid username. Enter username: ");
+        } else if (account_username_exists(world, line)) {
+            player_send(player, "That user is already logged in. Enter username: ");
         } else {
-            bool found = false;
-            for (size_t i = 0; i < world->actor_count; ++i) {
-                Actor *a = &world->actors[i];
-                if (a->player && a->player->account &&
-                    strcmp(a->player->account->username, line) == 0) {
-                    ctx->account = a->player->account;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            Account *loaded = account_load(line);
+            if (!loaded) {
                 player_send(player, "No such account. Enter username: ");
             } else {
                 strncpy(ctx->username, line, ACCOUNT_USERNAME_BUF_SIZE);
+                ctx->account = loaded;
                 ctx->step = ACC_LOGIN_PASSWORD;
                 player_send(player, "Enter password: ");
             }
@@ -237,9 +216,8 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
     case ACC_LOGIN_PASSWORD:
         if (ctx->account && account_check_password(ctx->account, line)) {
             player->state_data = NULL;
-            player->account    = ctx->account;
+            player->account = ctx->account;
             free(ctx);
-
             player_send(player, "Login successful.\n");
             player_state_enter_account_menu(rules, world, player);
         } else {
@@ -263,9 +241,9 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
         int got = sscanf(line, "play %63s", charname);
         if (got != 1) {
             player_send(player, "Available characters:\n");
-            player_send(player, "  (no characters)\n");  // TODO: list real characters
+            player_send(player, "  (no characters)\n");
         } else {
-            bool found = false;  // TODO: check player's saved chars
+            bool found = false;
             if (!found) {
                 player_send(player, "Unknown character. Available characters:\n");
                 player_send(player, "  (no characters)\n");
