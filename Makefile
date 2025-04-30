@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -std=c11 -Iinclude
+CFLAGS = -Wall -Wextra -Werror -std=c11 -Iinclude \
+         -g -O0 -fno-inline -fno-omit-frame-pointer
 LDLIBS = -lcrypt
 SRC_DIR = src
 OBJ_DIR = obj

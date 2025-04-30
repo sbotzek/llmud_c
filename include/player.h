@@ -1,8 +1,8 @@
-// player.h
+/* player.h */
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <stddef.h>    // for size_t
+#include <stddef.h>
 #include <stdbool.h>
 
 #define PLAYER_NAME_LENGTH 64
@@ -15,6 +15,7 @@ typedef struct Actor       Actor;
 typedef struct Account     Account;
 
 typedef enum {
+    PLAYER_STATE_NONE = 0,
     PLAYER_STATE_MENU,
     PLAYER_STATE_PLAYING,
     PLAYER_STATE_CHARACTER_CREATION,
@@ -32,27 +33,26 @@ typedef void (*InputHandler)(
 
 struct Player {
     char          name[PLAYER_NAME_LENGTH];
-
     PlayerState   state;
     void         *state_data;
     InputHandler  input_handler;
-
     Account      *account;
     Actor        *actor;
-
-    /* link back to the I/O layer */
     TelnetConn   *conn;
+
+    /* linked‐list pointer for registry of all players */
+    Player       *next_in_registry;
 };
 
 // — Lifecycle
 Player *player_create(void);
-void     player_destroy(Player *player);
+void    player_destroy(Player *player);
 
 // — Input
-void     player_handle_input(Player *player, GameRules *rules, World *world, const char *line);
+void    player_handle_input(Player *player, GameRules *rules, World *world, const char *line);
 
-// — Output helpers
-void     player_send(Player *player, const char *text);
-void     player_sendf(Player *player, const char *fmt, ...);
+// — Output
+void    player_send(Player *player, const char *text);
+void    player_sendf(Player *player, const char *fmt, ...);
 
 #endif // PLAYER_H

@@ -136,6 +136,10 @@ static bool account_username_exists(World *world, const char *username) {
 /* — Static input handlers */
 
 static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
+
     if (strcmp(line, "create") == 0) {
         player_state_enter_account_create(rules, world, player);
     } else if (strcmp(line, "login") == 0) {
@@ -146,6 +150,9 @@ static void handle_menu_input(GameRules *rules, World *world, Player *player, co
 }
 
 static void handle_account_create_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
     AccountCreateContext *ctx = player->state_data;
     switch (ctx->step) {
     case ACC_CREATE_USERNAME:
@@ -192,32 +199,60 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
 }
 
 static void handle_account_login_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
     AccountLoginContext *ctx = player->state_data;
     switch (ctx->step) {
     case ACC_LOGIN_USERNAME:
         if (!account_validate_username(line)) {
             player_send(player, "Invalid username. Enter username: ");
-        } else if (account_username_exists(world, line)) {
-            player_send(player, "That user is already logged in. Enter username: ");
         } else {
             Account *loaded = account_load(line);
             if (!loaded) {
                 player_send(player, "No such account. Enter username: ");
             } else {
                 strncpy(ctx->username, line, ACCOUNT_USERNAME_BUF_SIZE);
+                ctx->username[ACCOUNT_USERNAME_BUF_SIZE-1] = '\0';
                 ctx->account = loaded;
-                ctx->step = ACC_LOGIN_PASSWORD;
+                ctx->step    = ACC_LOGIN_PASSWORD;
                 player_send(player, "Enter password: ");
             }
         }
         break;
+
     case ACC_LOGIN_PASSWORD:
         if (ctx->account && account_check_password(ctx->account, line)) {
-            player->state_data = NULL;
-            player->account = ctx->account;
-            free(ctx);
-            player_send(player, "Login successful.\n");
-            player_state_enter_account_menu(rules, world, player);
+            Player *existing = world_find_player_by_username(world, ctx->username);
+            if (existing) {
+                /* takeover existing Player */
+                TelnetConn *old_conn = existing->conn;
+                TelnetConn *new_conn = player->conn;
+
+                new_conn->player   = existing;
+                existing->conn     = new_conn;
+
+                old_conn->player = NULL;
+                player->conn = NULL;
+
+                old_conn->connected = false;
+
+                /* clean up just the temp Account and temp Player */
+                account_destroy(ctx->account);
+                free(ctx);
+                world_destroy_player(world, player);
+
+                player_send(existing, "Login successful.\n");
+                player_state_enter_account_menu(rules, world, existing);
+            } else {
+                /* fresh login: just bind account — registry auto-maintained */
+                player->state_data = NULL;
+                player->account    = ctx->account;
+                free(ctx);
+
+                player_send(player, "Login successful.\n");
+                player_state_enter_account_menu(rules, world, player);
+            }
         } else {
             player_send(player, "Invalid password. Enter password: ");
         }
@@ -226,6 +261,9 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
 }
 
 static void handle_account_menu_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
     if (strcmp(line, "quit") == 0) {
         if (player->actor) {
             world_remove_actor(world, player->actor);
@@ -256,6 +294,9 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
 }
 
 static void handle_playing_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
     if (strcmp(line, "quit") == 0) {
         if (player->actor) {
             world_remove_actor(world, player->actor);
@@ -268,6 +309,9 @@ static void handle_playing_input(GameRules *rules, World *world, Player *player,
 }
 
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {
+    CHECK(rules != NULL);
+    CHECK(world != NULL);
+    CHECK(player != NULL);
     size_t len = strlen(line);
     bool valid = len > 0 && len < PLAYER_NAME_LENGTH;
     for (size_t i = 0; valid && i < len; ++i) {

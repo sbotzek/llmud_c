@@ -6,8 +6,8 @@
 #include "game_processes.h"
 
 int main(void) {
-    World world;
-    GameRules rules;
+    World *world = world_create();
+    GameRules *rules = game_rules_create();
 
     const GameProcess processes[] = {
         {.name="event.cleanup",          .tick=event_cleanup_tick,         .frequency=1},
@@ -19,5 +19,5 @@ int main(void) {
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);
 
-    return server_run(&rules, &world, processes, process_count) ? 0 : 1;
+    return server_run(rules, world, processes, process_count) ? 0 : 1;
 }

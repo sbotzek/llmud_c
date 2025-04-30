@@ -46,9 +46,6 @@ TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
         return NULL;
     }
 
-    conn->player = player_create();
-    conn->player->conn = conn;
-
     return conn;
 }
 

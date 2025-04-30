@@ -5,7 +5,7 @@
 #include "telnet_conn.h"
 
 Player *player_create() {
-    Player *player = malloc(sizeof(Player));
+    Player *player = calloc(1, sizeof(Player));
     CHECK_MSG(player != NULL, "player_create: malloc player failed");
 
     return player;
