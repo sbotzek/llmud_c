@@ -31,6 +31,9 @@ TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
     TelnetConn *conn = malloc(sizeof(TelnetConn));
     CHECK_MSG(conn != NULL, "telnet_conn_create: malloc failed");
 
+    conn->telnet_state   = TELNET_STATE_DATA;
+    conn->telnet_command = 0;
+
     conn->socket_fd       = socket_fd;
     conn->address         = *addr;
     inet_ntop(AF_INET, &(addr->sin_addr), conn->ip_string, sizeof(conn->ip_string));
