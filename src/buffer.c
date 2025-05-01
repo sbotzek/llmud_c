@@ -25,8 +25,9 @@ void buffer_free(Buffer *buf) {
 }
 
 Buffer *buffer_create(size_t initial_capacity) {
-    Buffer *buf = malloc(sizeof(Buffer));
-    CHECK_MSG(buf != NULL, "buffer_create: malloc of %zu bytes failed", sizeof(Buffer));
+    Buffer *buf = calloc(1, sizeof *buf);
+    CHECK_MSG(buf != NULL,
+              "buffer_create: calloc of %zu bytes failed", sizeof *buf);
     buffer_init(buf, initial_capacity);
     return buf;
 }

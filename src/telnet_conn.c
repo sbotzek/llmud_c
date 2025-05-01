@@ -28,26 +28,15 @@ static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_c
 static bool write_all(int fd, const char *buf, size_t len);
 
 TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
-    TelnetConn *conn = malloc(sizeof(TelnetConn));
-    CHECK_MSG(conn != NULL, "telnet_conn_create: malloc failed");
+    TelnetConn *conn = calloc(1, sizeof *conn);
+    CHECK_MSG(conn, "telnet_conn_create: calloc failed");
 
-    conn->telnet_state   = TELNET_STATE_DATA;
-    conn->telnet_command = 0;
-
-    conn->socket_fd       = socket_fd;
-    conn->address         = *addr;
-    inet_ntop(AF_INET, &(addr->sin_addr), conn->ip_string, sizeof(conn->ip_string));
-    conn->connected       = true;
-
-    conn->input_length    = 0;
-    conn->input_line_ready= false;
-    conn->input_discarding= false;
+    conn->socket_fd = socket_fd;
+    conn->address   = *addr;
+    inet_ntop(AF_INET, &addr->sin_addr, conn->ip_string, sizeof conn->ip_string);
+    conn->connected = true;
 
     conn->output = buffer_create(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
-    if (!conn->output) {
-        free(conn);
-        return NULL;
-    }
 
     return conn;
 }

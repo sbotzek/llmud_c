@@ -37,10 +37,13 @@ Account *account_create(const char *username, const char *password) {
     CHECK_MSG(ulen > 0 && ulen <= ACCOUNT_USERNAME_MAX_LEN,
               "Username length out of bounds (%zu)", ulen);
     CHECK_MSG(password && *password, "Password cannot be empty");
-    Account *account = malloc(sizeof *account);
+
+    Account *account = calloc(1, sizeof *account);
     CHECK_MSG(account, "OOM creating Account");
+
     memcpy(account->username, username, ulen + 1);
     account->password_hash = generate_password_hash(password);
+
     return account;
 }
 
