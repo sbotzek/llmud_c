@@ -22,7 +22,7 @@ typedef enum {
 
 typedef struct {
     AccountCreateStep step;
-    char    username[ACCOUNT_USERNAME_BUF_SIZE];
+    char    username[ACCOUNT_USERNAME_SIZE];
     char   *password;
 } AccountCreateContext;
 
@@ -34,7 +34,7 @@ typedef enum {
 
 typedef struct {
     AccountLoginStep step;
-    char             username[ACCOUNT_USERNAME_BUF_SIZE];
+    char             username[ACCOUNT_USERNAME_SIZE];
     Account         *account;
 } AccountLoginContext;
 
@@ -161,7 +161,8 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
         } else if (account_username_exists(world, line)) {
             player_send(player, "Username already in use. Enter username: ");
         } else {
-            strncpy(ctx->username, line, ACCOUNT_USERNAME_BUF_SIZE);
+            strncpy(ctx->username, line, ACCOUNT_USERNAME_SIZE);
+            ctx->username[ACCOUNT_USERNAME_SIZE-1] = '\0';
             ctx->step = ACC_CREATE_PASSWORD;
             player_send(player, "Enter password: ");
         }
@@ -212,8 +213,8 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
             if (!loaded) {
                 player_send(player, "No such account. Enter username: ");
             } else {
-                strncpy(ctx->username, line, ACCOUNT_USERNAME_BUF_SIZE);
-                ctx->username[ACCOUNT_USERNAME_BUF_SIZE-1] = '\0';
+                strncpy(ctx->username, line, ACCOUNT_USERNAME_SIZE);
+                ctx->username[ACCOUNT_USERNAME_SIZE-1] = '\0';
                 ctx->account = loaded;
                 ctx->step    = ACC_LOGIN_PASSWORD;
                 player_send(player, "Enter password: ");
@@ -275,7 +276,7 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
     } else if (strcmp(line, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strncmp(line, "play", 4) == 0) {
-        char charname[PLAYER_NAME_LENGTH];
+        char charname[PLAYER_NAME_SIZE];
         int got = sscanf(line, "play %63s", charname);
         if (got != 1) {
             player_send(player, "Available characters:\n");
@@ -286,7 +287,7 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
                 player_send(player, "Unknown character. Available characters:\n");
                 player_send(player, "  (no characters)\n");
             } else {
-                snprintf(player->name, PLAYER_NAME_LENGTH, "%s", charname);
+                snprintf(player->name, PLAYER_NAME_SIZE, "%s", charname);
                 player_state_enter_playing(rules, world, player);
             }
         }
@@ -315,7 +316,7 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
     CHECK(world != NULL);
     CHECK(player != NULL);
     size_t len = strlen(line);
-    bool valid = len > 0 && len < PLAYER_NAME_LENGTH;
+    bool valid = len > 0 && len < PLAYER_NAME_SIZE - 1;
     for (size_t i = 0; valid && i < len; ++i) {
         if (line[i] < 'a' || line[i] > 'z') {
             valid = false;
@@ -324,7 +325,7 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
     if (!valid) {
         player_send(player, "Invalid name. Use letters a-z only. Enter character name: ");
     } else {
-        snprintf(player->name, PLAYER_NAME_LENGTH, "%s", line);
+        snprintf(player->name, PLAYER_NAME_SIZE, "%s", line);
         player_sendf(player, "Character '%s' created.\n", line);
         player_state_enter_account_menu(rules, world, player);
     }

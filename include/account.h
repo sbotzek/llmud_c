@@ -5,13 +5,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* max username characters (not counting NUL) */
-#define ACCOUNT_USERNAME_MAX_LEN     31
-/* buffer size for username (including terminating NUL) */
-#define ACCOUNT_USERNAME_BUF_SIZE    (ACCOUNT_USERNAME_MAX_LEN + 1)
+#define ACCOUNT_USERNAME_SIZE     32
 
 typedef struct Account {
-    char   username[ACCOUNT_USERNAME_BUF_SIZE];
+    char   username[ACCOUNT_USERNAME_SIZE];
     char  *password_hash;   /* malloc’d copy of the crypt() output */
 } Account;
 

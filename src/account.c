@@ -34,7 +34,7 @@ static char *generate_password_hash(const char *password) {
 
 Account *account_create(const char *username, const char *password) {
     size_t ulen = strlen(username);
-    CHECK_MSG(ulen > 0 && ulen <= ACCOUNT_USERNAME_MAX_LEN,
+    CHECK_MSG(ulen > 0 && ulen < ACCOUNT_USERNAME_SIZE - 1,
               "Username length out of bounds (%zu)", ulen);
     CHECK_MSG(password && *password, "Password cannot be empty");
 
@@ -66,7 +66,7 @@ void account_destroy(Account *account) {
 bool account_validate_username(const char *username) {
     if (!username || !*username) return false;
     size_t len = strlen(username);
-    if (len == 0 || len > ACCOUNT_USERNAME_MAX_LEN) return false;
+    if (len == 0 || len >= ACCOUNT_USERNAME_SIZE) return false;
     for (const char *p = username; *p; ++p) {
         unsigned char c = (unsigned char)*p;
         if (!isalnum(c) && c != '_' && c != '-') {
@@ -101,7 +101,7 @@ Account *account_load(const char *username) {
         free(path);
         return NULL;
     }
-    char buf[ACCOUNT_USERNAME_BUF_SIZE + 1 + 512];
+    char buf[ACCOUNT_USERNAME_SIZE + 1 + 512];
     char *line = fgets(buf, sizeof buf, f);
     CHECK_MSG(line, "Failed to read account from '%s'", path);
     fclose(f);
@@ -113,8 +113,8 @@ Account *account_load(const char *username) {
     char *hash = sep + 1;
     Account *acct = malloc(sizeof *acct);
     CHECK_MSG(acct, "OOM creating Account");
-    memcpy(acct->username, username, ACCOUNT_USERNAME_BUF_SIZE);
-    acct->username[ACCOUNT_USERNAME_BUF_SIZE-1] = '\0';
+    memcpy(acct->username, username, ACCOUNT_USERNAME_SIZE);
+    acct->username[ACCOUNT_USERNAME_SIZE-1] = '\0';
     size_t hlen = strlen(hash);
     acct->password_hash = malloc(hlen + 1);
     CHECK_MSG(acct->password_hash, "OOM allocating hash copy");

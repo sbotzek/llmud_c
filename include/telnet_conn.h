@@ -7,8 +7,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define TELNET_CONN_MAX_LINE            1024
-#define TELNET_CONN_INPUT_BUFFER_SIZE   (TELNET_CONN_MAX_LINE * 2)
+#define TELNET_CONN_LINE_SIZE 1024
+// store two lines + null terminator – we only really want 1 line at a time,
+// but we need more storage in case we read part of another line while still
+// trying to finish reading an overly long first line.
+#define TELNET_CONN_INPUT_BUFFER_SIZE   (2 * (TELNET_CONN_LINE_SIZE) + 1)
 
 typedef enum {
     TELNET_STATE_DATA,
