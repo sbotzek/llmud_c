@@ -269,7 +269,9 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
             world_remove_actor(world, player->actor);
         }
         player_send(player, "Goodbye!\n");
+        player->conn->player = NULL;
         player->conn->connected = false;
+        world_destroy_player(world, player);
     } else if (strcmp(line, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strncmp(line, "play", 4) == 0) {

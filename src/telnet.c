@@ -141,10 +141,6 @@ void telnet_read_tick(GameRules *rules, World *world) {
         telnet_conn_read(conn);
         if (!conn->connected) {
             log_info("disconnected: %s", conn->ip_string);
-            telnet_conn_destroy(conn);
-            connections[i] = NULL;
-            ++slot;
-            continue;
         }
 
         ++slot;
@@ -179,11 +175,23 @@ void telnet_flush_tick(GameRules *rules, World *world) {
         telnet_conn_flush(conn);
         if (!conn->connected) {
             log_info("disconnected: %s", conn->ip_string);
-            telnet_conn_destroy(conn);
-            connections[i] = NULL;
-            continue;
         }
 
         log_trace("telnet_flush_tick: ip [%s]: flushed", conn->ip_string);
+    }
+}
+
+void telnet_cleanup_tick(GameRules *rules, World *world) {
+    UNUSED(rules);
+    UNUSED(world);
+
+    for (int i = 0; i < MAX_CONNECTIONS; ++i) {
+        TelnetConn *conn = connections[i];
+
+        if (conn && !conn->connected) {
+            log_info("telnet_cleanup_tick: freeing conn [%s]", conn->ip_string);
+            telnet_conn_destroy(conn);
+            connections[i] = NULL;
+        }
     }
 }

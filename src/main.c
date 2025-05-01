@@ -15,6 +15,7 @@ int main(void) {
         {.name="telnet.read",            .tick=telnet_read_tick,           .frequency=1},
         {.name="telnet.process_input",   .tick=telnet_process_input_tick,  .frequency=1},
         {.name="telnet.flush",           .tick=telnet_flush_tick,          .frequency=1},
+        {.name="telnet.cleanup",         .tick=telnet_cleanup_tick,        .frequency=1},
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);
