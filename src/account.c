@@ -111,6 +111,7 @@ Account *account_load(const char *username) {
     Account *acct = malloc(sizeof *acct);
     CHECK_MSG(acct, "OOM creating Account");
     memcpy(acct->username, username, ACCOUNT_USERNAME_BUF_SIZE);
+    acct->username[ACCOUNT_USERNAME_BUF_SIZE-1] = '\0';
     size_t hlen = strlen(hash);
     acct->password_hash = malloc(hlen + 1);
     CHECK_MSG(acct->password_hash, "OOM allocating hash copy");
