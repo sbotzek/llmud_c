@@ -227,16 +227,14 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
             Player *existing = world_find_player_by_username(world, ctx->username);
             if (existing) {
                 /* takeover existing Player */
-                TelnetConn *old_conn = existing->conn;
-                TelnetConn *new_conn = player->conn;
+                if (existing->conn) {
+                    existing->conn->player = NULL;
+                    existing->conn->connected = false;
+                }
 
-                new_conn->player   = existing;
-                existing->conn     = new_conn;
-
-                old_conn->player = NULL;
+                player->conn->player = existing;
+                existing->conn = player->conn;
                 player->conn = NULL;
-
-                old_conn->connected = false;
 
                 /* clean up just the temp Account and temp Player */
                 account_destroy(ctx->account);
