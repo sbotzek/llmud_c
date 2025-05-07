@@ -14,7 +14,7 @@ void buffer_init(Buffer *buf, size_t initial_capacity) {
     buf->capacity = initial_capacity;
 }
 
-void buffer_free(Buffer *buf) {
+void buffer_cleanup(Buffer *buf) {
     if (!buf) return;
     if (buf->data) {
         free(buf->data);
@@ -24,17 +24,17 @@ void buffer_free(Buffer *buf) {
     buf->capacity = 0;
 }
 
-Buffer *buffer_create(size_t initial_capacity) {
+Buffer *buffer_new(size_t initial_capacity) {
     Buffer *buf = calloc(1, sizeof *buf);
     CHECK_MSG(buf != NULL,
-              "buffer_create: calloc of %zu bytes failed", sizeof *buf);
+              "buffer_new: calloc of %zu bytes failed", sizeof *buf);
     buffer_init(buf, initial_capacity);
     return buf;
 }
 
-void buffer_destroy(Buffer *buf) {
+void buffer_free(Buffer *buf) {
     if (!buf) return;
-    buffer_free(buf);
+    buffer_cleanup(buf);
     free(buf);
 }
 

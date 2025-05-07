@@ -18,15 +18,15 @@ typedef struct World {
     Player  *players_head;
 } World;
 
-World *world_create();
+World *world_new();
 
 /* actor management (unchanged) */
-Actor *world_create_actor(World *world);
+Actor *world_new_actor(World *world);
 bool   world_remove_actor(World *world, Actor *actor);
 
 /* player‐list management: */
-Player *world_create_player(World *world);
-void    world_destroy_player(World *world, Player *player);
+Player *world_new_player(World *world);
+void    world_free_player(World *world, Player *player);
 Player *world_find_player_by_username(World *world, const char *username);
 
 #endif // WORLD_H

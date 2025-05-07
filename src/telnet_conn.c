@@ -27,21 +27,21 @@
 static bool process_input_byte(TelnetConn *conn, unsigned char byte, char *out_char);
 static bool write_all(int fd, const char *buf, size_t len);
 
-TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr) {
+TelnetConn *telnet_conn_new(int socket_fd, struct sockaddr_in *addr) {
     TelnetConn *conn = calloc(1, sizeof *conn);
-    CHECK_MSG(conn, "telnet_conn_create: calloc failed");
+    CHECK_MSG(conn, "telnet_conn_new: calloc failed");
 
     conn->socket_fd = socket_fd;
     conn->address   = *addr;
     inet_ntop(AF_INET, &addr->sin_addr, conn->ip_string, sizeof conn->ip_string);
     conn->connected = true;
 
-    conn->output = buffer_create(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
+    conn->output = buffer_new(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
 
     return conn;
 }
 
-void telnet_conn_destroy(TelnetConn *conn) {
+void telnet_conn_free(TelnetConn *conn) {
     CHECK(conn != NULL);
 
     if (conn->player) {
@@ -54,7 +54,7 @@ void telnet_conn_destroy(TelnetConn *conn) {
     }
 
     close(conn->socket_fd);
-    buffer_destroy(conn->output);
+    buffer_free(conn->output);
     free(conn);
 }
 

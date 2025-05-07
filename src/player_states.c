@@ -104,7 +104,7 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player) 
     UNUSED(rules);
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
-    Actor *actor = world_create_actor(world);
+    Actor *actor = world_new_actor(world);
     if (!actor) {
         player_send(player, "World is full. Try again later.\n");
         return;
@@ -129,7 +129,7 @@ static bool account_username_exists(World *world, const char *username) {
     if (!acct) {
         return false;
     }
-    account_destroy(acct);
+    account_free(acct);
     return true;
 }
 
@@ -186,7 +186,7 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             ctx->step = ACC_CREATE_PASSWORD;
             player_send(player, "Passwords do not match. Enter password: ");
         } else {
-            Account *acct = account_create(ctx->username, ctx->password);
+            Account *acct = account_new(ctx->username, ctx->password);
             account_save(acct);
             free(ctx->password);
             free(ctx);
@@ -237,9 +237,9 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
                 player->conn = NULL;
 
                 /* clean up just the temp Account and temp Player */
-                account_destroy(ctx->account);
+                account_free(ctx->account);
                 free(ctx);
-                world_destroy_player(world, player);
+                world_free_player(world, player);
 
                 player_send(existing, "Login successful.\n");
                 player_state_enter_account_menu(rules, world, existing);
@@ -270,7 +270,7 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
         player_send(player, "Goodbye!\n");
         player->conn->player = NULL;
         player->conn->connected = false;
-        world_destroy_player(world, player);
+        world_free_player(world, player);
     } else if (strcmp(line, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strncmp(line, "play", 4) == 0) {

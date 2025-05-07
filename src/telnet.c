@@ -88,14 +88,14 @@ static void accept_new_connections(World *world) {
             continue;
         }
 
-        connections[slot] = telnet_conn_create(conn_fd, &conn_addr);
+        connections[slot] = telnet_conn_new(conn_fd, &conn_addr);
         if (!connections[slot]) {
-            log_error("telnet_conn_create failed for fd %d", conn_fd);
+            log_error("telnet_conn_new failed for fd %d", conn_fd);
             close(conn_fd);
             continue;
         }
 
-        connections[slot]->player = world_create_player(world);
+        connections[slot]->player = world_new_player(world);
         connections[slot]->player->conn = connections[slot];
 
         player_state_enter_menu(NULL, NULL, connections[slot]->player);
@@ -181,7 +181,7 @@ void telnet_flush_tick(GameRules *rules, World *world) {
     }
 }
 
-void telnet_cleanup_tick(GameRules *rules, World *world) {
+void telnet_gc_tick(GameRules *rules, World *world) {
     UNUSED(rules);
     UNUSED(world);
 
@@ -189,8 +189,8 @@ void telnet_cleanup_tick(GameRules *rules, World *world) {
         TelnetConn *conn = connections[i];
 
         if (conn && !conn->connected) {
-            log_info("telnet_cleanup_tick: freeing conn [%s]", conn->ip_string);
-            telnet_conn_destroy(conn);
+            log_info("telnet_gc_tick: freeing conn [%s]", conn->ip_string);
+            telnet_conn_free(conn);
             connections[i] = NULL;
         }
     }

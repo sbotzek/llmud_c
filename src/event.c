@@ -70,7 +70,7 @@ void event_emit(EventType type, void *payload) {
 typedef struct GameRules GameRules;
 typedef struct World World;
 
-void event_cleanup_tick(GameRules *rules, World *world) {
+void event_gc_tick(GameRules *rules, World *world) {
     UNUSED(rules);
     UNUSED(world);
 

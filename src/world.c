@@ -10,14 +10,14 @@
 
 static bool warned_actor_count = false;
 
-World *world_create() {
+World *world_new() {
     World *world = calloc(1, sizeof(World));
-    CHECK_MSG(world != NULL, "world_create: malloc player failed");
+    CHECK_MSG(world != NULL, "world_new: malloc player failed");
 
     return world;
 }
 
-Actor *world_create_actor(World *world) {
+Actor *world_new_actor(World *world) {
     CHECK(world != NULL);
 
     // Try to reuse a dead slot
@@ -76,15 +76,15 @@ bool world_remove_actor(World *world, Actor *actor) {
     return true;
 }
 
-Player *world_create_player(World *world) {
+Player *world_new_player(World *world) {
     CHECK(world != NULL);
-    Player *p = player_create();
+    Player *p = player_new();
     p->next_in_registry = world->players_head;
     world->players_head = p;
     return p;
 }
 
-void world_destroy_player(World *world, Player *player) {
+void world_free_player(World *world, Player *player) {
     CHECK(world  != NULL);
     CHECK(player != NULL);
     Player **pp = &world->players_head;
@@ -95,7 +95,7 @@ void world_destroy_player(World *world, Player *player) {
         }
         pp = &(*pp)->next_in_registry;
     }
-    player_destroy(player);
+    player_free(player);
 }
 
 Player *world_find_player_by_username(World *world, const char *username) {

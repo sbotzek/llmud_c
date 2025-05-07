@@ -15,11 +15,11 @@ typedef struct Buffer {
 
 // Init/free for stack or embedded use
 void buffer_init(Buffer *buf, size_t initial_capacity);
-void buffer_free(Buffer *buf);
+void buffer_cleanup(Buffer *buf);
 
 // Heap-allocated variant
-Buffer *buffer_create(size_t initial_capacity);
-void buffer_destroy(Buffer *buf);
+Buffer *buffer_new(size_t initial_capacity);
+void buffer_free(Buffer *buf);
 
 // Append raw data or strings
 void buffer_append(Buffer *buf, const char *data, size_t size);

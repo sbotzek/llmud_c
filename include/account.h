@@ -17,12 +17,12 @@ typedef struct Account {
  * Caller must have validated username (≤ ACCOUNT_USERNAME_MAX_LEN
  * and valid chars) and non‐empty password.
  */
-Account *account_create(const char *username, const char *password);
+Account *account_new(const char *username, const char *password);
 
 /**
  * Zero out and free an Account.
  */
-void account_destroy(Account *account);
+void account_free(Account *account);
 
 /**
  * Check a plaintext password against the stored hash.

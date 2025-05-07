@@ -4,14 +4,14 @@
 #include "macros.h"
 #include "telnet_conn.h"
 
-Player *player_create() {
+Player *player_new() {
     Player *player = calloc(1, sizeof(Player));
-    CHECK_MSG(player != NULL, "player_create: malloc player failed");
+    CHECK_MSG(player != NULL, "player_new: malloc player failed");
 
     return player;
 }
 
-void player_destroy(Player *player) {
+void player_free(Player *player) {
     CHECK(player != NULL);
     free(player);
 }

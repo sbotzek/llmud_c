@@ -6,16 +6,16 @@
 #include "game_processes.h"
 
 int main(void) {
-    World *world = world_create();
-    GameRules *rules = game_rules_create();
+    World *world = world_new();
+    GameRules *rules = game_rules_new();
 
     const GameProcess processes[] = {
-        {.name="event.cleanup",          .tick=event_cleanup_tick,         .frequency=1},
+        {.name="event.gc",               .tick=event_gc_tick,         .frequency=1},
         {.name="telnet.listen",          .tick=telnet_listen_tick,         .frequency=1},
         {.name="telnet.read",            .tick=telnet_read_tick,           .frequency=1},
         {.name="telnet.process_input",   .tick=telnet_process_input_tick,  .frequency=1},
         {.name="telnet.flush",           .tick=telnet_flush_tick,          .frequency=1},
-        {.name="telnet.cleanup",         .tick=telnet_cleanup_tick,        .frequency=1},
+        {.name="telnet.gc",              .tick=telnet_gc_tick,        .frequency=1},
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);

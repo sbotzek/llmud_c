@@ -27,8 +27,8 @@ typedef struct Player     Player;
 typedef struct TelnetConn TelnetConn;
 
 // — Lifecycle
-TelnetConn *telnet_conn_create(int socket_fd, struct sockaddr_in *addr);
-void        telnet_conn_destroy(TelnetConn *conn);
+TelnetConn *telnet_conn_new(int socket_fd, struct sockaddr_in *addr);
+void        telnet_conn_free(TelnetConn *conn);
 
 // — I/O
 void telnet_conn_read(TelnetConn *conn);

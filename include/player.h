@@ -45,8 +45,8 @@ struct Player {
 };
 
 // — Lifecycle
-Player *player_create(void);
-void    player_destroy(Player *player);
+Player *player_new(void);
+void    player_free(Player *player);
 
 // — Input
 void    player_handle_input(Player *player, GameRules *rules, World *world, const char *line);

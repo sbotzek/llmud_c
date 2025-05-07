@@ -32,7 +32,7 @@ static char *generate_password_hash(const char *password) {
     return copy;
 }
 
-Account *account_create(const char *username, const char *password) {
+Account *account_new(const char *username, const char *password) {
     size_t ulen = strlen(username);
     CHECK_MSG(ulen > 0 && ulen < ACCOUNT_USERNAME_SIZE - 1,
               "Username length out of bounds (%zu)", ulen);
@@ -54,7 +54,7 @@ bool account_check_password(const Account *account, const char *password) {
     return strcmp(calc, account->password_hash) == 0;
 }
 
-void account_destroy(Account *account) {
+void account_free(Account *account) {
     CHECK(account != NULL);
     if (account->password_hash) {
         memset(account->password_hash, 0, strlen(account->password_hash));
