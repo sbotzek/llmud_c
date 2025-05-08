@@ -3,6 +3,9 @@
 
 #include "account.h"
 #include "macros.h"
+#include "file_chunk.h"
+#include "strutil.h"
+#include "log.h"
 #include "io.h"       /* for DATA_DIR */
 #include <stdlib.h>
 #include <string.h>
@@ -78,49 +81,62 @@ bool account_validate_username(const char *username) {
 
 void account_save(const Account *account) {
     CHECK(account);
-    /* ensure data and accounts directories exist */
+
     ensure_directory(DATA_DIR);
     ensure_directory(ACCOUNTS_DIR);
 
     char *path = make_account_filepath(account->username);
     FILE *f = fopen(path, "w");
     CHECK_MSG(f, "Failed to open '%s' for writing", path);
-    int written = fprintf(f, "%s:%s\n",
-                          account->username,
-                          account->password_hash);
-    CHECK_MSG(written >= 0, "Failed to write account to '%s'", path);
+
+    file_chunk_write_field(f, "username", account->username);
+    file_chunk_write_field(f, "password_hash", account->password_hash);
+
     CHECK_MSG(fclose(f) == 0, "Failed to close '%s'", path);
     free(path);
 }
 
 Account *account_load(const char *username) {
-    CHECK_MSG(username, "Username is NULL");
+    CHECK(username);
+
     char *path = make_account_filepath(username);
     FILE *f = fopen(path, "r");
     if (!f) {
         free(path);
         return NULL;
     }
-    char buf[ACCOUNT_USERNAME_SIZE + 1 + 512];
-    char *line = fgets(buf, sizeof buf, f);
-    CHECK_MSG(line, "Failed to read account from '%s'", path);
+
+    FileChunkReader r;
+    file_chunk_reader_init(&r, f);
+
+    Account *acc = calloc(1, sizeof(Account));
+    CHECK(acc);
+
+    while (file_chunk_read(&r)) {
+        if (r.chunk.type != FILE_CHUNK_FIELD) {
+            // Stop on first non-field (e.g., section header like #character ...)
+            break;
+        }
+
+        if (strcmp(r.chunk.tag.data, "username") == 0) {
+            strncpy(acc->username, r.chunk.value.data, ACCOUNT_USERNAME_SIZE - 1);
+            acc->username[ACCOUNT_USERNAME_SIZE - 1] = '\0';
+        } else if (strcmp(r.chunk.tag.data, "password_hash") == 0) {
+            acc->password_hash = str_copy(r.chunk.value.data);
+            CHECK_MSG(acc->password_hash, "OOM loading password hash");
+        } else {
+            log_warn("Unknown account field '%s' at line %d", r.chunk.tag.data, r.line_number);
+        }
+    }
+
+    file_chunk_reader_cleanup(&r);
     fclose(f);
-    char *nl = strchr(buf, '\n');
-    if (nl) *nl = '\0';
-    char *sep = strchr(buf, ':');
-    CHECK_MSG(sep, "Malformed account file '%s'", path);
-    *sep = '\0';
-    char *hash = sep + 1;
-    Account *acct = malloc(sizeof *acct);
-    CHECK_MSG(acct, "OOM creating Account");
-    memcpy(acct->username, username, ACCOUNT_USERNAME_SIZE);
-    acct->username[ACCOUNT_USERNAME_SIZE-1] = '\0';
-    size_t hlen = strlen(hash);
-    acct->password_hash = malloc(hlen + 1);
-    CHECK_MSG(acct->password_hash, "OOM allocating hash copy");
-    memcpy(acct->password_hash, hash, hlen + 1);
     free(path);
-    return acct;
+
+    CHECK_MSG(acc->username[0], "Missing username field");
+    CHECK_MSG(acc->password_hash, "Missing password_hash field");
+
+    return acc;
 }
 
 /*---------------------------------------------------------------*/
