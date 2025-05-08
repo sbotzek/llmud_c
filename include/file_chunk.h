@@ -32,7 +32,7 @@ You stand in a very bright room.~
 Or, if you don't have multiples
 <example2>
 username: bobby~
-password_hash: jlkr32
+password_hash: jlkr32~
 #character ricky~
 #character junior~
 </example2>
