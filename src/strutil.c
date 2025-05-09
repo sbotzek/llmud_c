@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 char *str_copy(const char *src) {
     CHECK(src);
@@ -31,4 +32,30 @@ bool str_token_contains(const char *list, const char *word) {
     }
 
     return false;
+}
+
+char *str_parse_word(char *input, char *word) {
+    if (!input) {
+        word[0] = '\0';
+        return NULL;
+    }
+
+    // Skip leading whitespace
+    while (isspace((unsigned char)*input)) {
+        ++input;
+    }
+
+    if (*input == '\0') {
+        word[0] = '\0';
+        return NULL;
+    }
+
+    // Copy word until next whitespace or null terminator
+    char *out = word;
+    while (*input && !isspace((unsigned char)*input)) {
+        *out++ = *input++;
+    }
+    *out = '\0';
+
+    return *input ? input : NULL;
 }
