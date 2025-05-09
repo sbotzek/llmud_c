@@ -7,6 +7,14 @@
 #include <string.h>
 #include <stdio.h>
 
+// Internal struct for scratch buffers
+typedef struct ScratchHeader {
+    struct ScratchHeader *next;
+    Buffer buffer;
+} ScratchHeader;
+
+static ScratchHeader *scratch_head = NULL;
+
 void buffer_init(Buffer *buf, size_t initial_capacity) {
     buf->data = malloc(initial_capacity);
     CHECK_MSG(buf->data != NULL, "buffer_init: malloc of %zu bytes failed", initial_capacity);
@@ -36,6 +44,60 @@ void buffer_free(Buffer *buf) {
     if (!buf) return;
     buffer_cleanup(buf);
     free(buf);
+}
+
+Buffer *buffer_new_scratch(size_t initial_capacity) {
+    ScratchHeader *hdr = calloc(1, sizeof(ScratchHeader));
+    CHECK_MSG(hdr != NULL,
+              "buffer_new_scratch: calloc of %zu bytes failed", sizeof *hdr);
+
+    buffer_init(&hdr->buffer, initial_capacity);
+    hdr->next = scratch_head;
+    scratch_head = hdr;
+    return &hdr->buffer;
+}
+
+void buffer_gc_scratch(void) {
+    ScratchHeader *curr = scratch_head;
+    while (curr) {
+        ScratchHeader *next = curr->next;
+        buffer_cleanup(&curr->buffer);
+        free(curr);
+        curr = next;
+    }
+    scratch_head = NULL;
+}
+
+void buffer_unscratch(Buffer *buf) {
+    ScratchHeader *prev = NULL;
+    ScratchHeader *curr = scratch_head;
+
+    while (curr) {
+        if (&curr->buffer == buf) {
+            if (prev) {
+                prev->next = curr->next;
+            } else {
+                scratch_head = curr->next;
+            }
+
+            // Allocate new heap buffer
+            Buffer *heap_buf = malloc(sizeof(Buffer));
+            CHECK_MSG(heap_buf != NULL, "buffer_unscratch: malloc failed");
+
+            *heap_buf = *buf;  // copy contents
+            buffer_cleanup(&curr->buffer); // no-op, but consistent
+            free(curr);
+
+            *buf = *heap_buf;
+            free(heap_buf);
+            return;
+        }
+
+        prev = curr;
+        curr = curr->next;
+    }
+
+    CHECK_MSG(false, "buffer_unscratch: buffer not found in scratch list");
 }
 
 void buffer_reserve(Buffer *buf, size_t needed_capacity) {

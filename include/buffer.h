@@ -21,6 +21,14 @@ void buffer_cleanup(Buffer *buf);
 Buffer *buffer_new(size_t initial_capacity);
 void buffer_free(Buffer *buf);
 
+// Allocates a new scratch buffer (auto-freed by buffer_gc_scratch)
+Buffer *buffer_new_scratch(size_t initial_capacity);
+// Frees all scratch buffers
+void buffer_gc_scratch(void);
+// Removes the buffer from scratch GC management.
+// Crashes if buffer is not a scratch buffer.
+void buffer_unscratch(Buffer *buf);
+
 // Append raw data or strings
 void buffer_append(Buffer *buf, const char *data, size_t size);
 void buffer_append_str(Buffer *buf, const char *str);
