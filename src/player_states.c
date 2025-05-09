@@ -41,6 +41,7 @@ typedef struct {
 
 // Static helper declarations
 static bool account_username_exists(World *world, const char *username);
+static void list_account_characters(Player *player);
 
 // Input handler declarations
 static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line);
@@ -255,40 +256,93 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
     }
 }
 
-static void handle_account_menu_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_account_menu_input(GameRules *rules,
+                                      World     *world,
+                                      Player    *player,
+                                      const char *line)
+{
+    CHECK(rules  != NULL);
+    CHECK(world  != NULL);
     CHECK(player != NULL);
 
+    // parse the command and optional argument
     char cmd[PLAYER_INPUT_SIZE];
     char arg[PLAYER_INPUT_SIZE];
     char *rest = str_parse_word((char *)line, cmd);
     rest = str_parse_word(rest, arg);
 
     if (strcmp(cmd, "quit") == 0) {
-        if (player->actor) world_remove_actor(world, player->actor);
+        if (player->actor)
+            world_remove_actor(world, player->actor);
         player_send(player, "Goodbye!\n");
         player->conn->player = NULL;
         player->conn->connected = false;
         player_unregister(player);
         player_free(player);
+
     } else if (strcmp(cmd, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strcmp(cmd, "play") == 0) {
+        // No name given: list all characters
         if (arg[0] == '\0') {
             player_send(player, "Available characters:\n");
-            player_send(player, "  (no characters)\n");
+            list_account_characters(player);
+
+        // Name given: verify and switch to playing
         } else {
-            bool found = false; // TODO: lookup actual characters
-            if (!found) {
-                player_send(player, "Unknown character. Available characters:\n");
-                player_send(player, "  (no characters)\n");
+            Account *acct = player->account;
+            CHECK_MSG(acct != NULL, "Player has no account");
+
+            if (!account_has_character(acct, arg)) {
+                player_sendf(player, "Unknown character '%s'. Available characters:\n", arg);
+                list_account_characters(player);
             } else {
+                // stash chosen name in state_data for the playing state to pick up
+                char *selected = str_copy(arg);
+                CHECK_MSG(selected != NULL, "Out of memory allocating character name");
+                player->state_data = selected;
+
                 player_state_enter_playing(rules, world, player);
             }
         }
+
     } else {
-        player_send(player, "Unknown command. Type 'create', 'play <name>', or 'quit'.\n");
+        player_send(player,
+            "Unknown command. Type 'create', 'play <name>', or 'quit'.\n");
+    }
+}
+
+
+static void list_account_characters(Player *player) {
+    CHECK(player != NULL);
+    CHECK(player->account != NULL);
+
+    size_t len = player->account->character_names.length;
+    if (len == 0) {
+        player_send(player, "  (no characters)\n");
+        return;
+    }
+
+    const char *start = player->account->character_names.data;
+    const char *end   = start + len;
+
+    // Split on '\n'
+    while (start < end) {
+        const char *nl = memchr(start, ' ', end - start);
+        size_t name_len = nl ? (size_t)(nl - start) : (size_t)(end - start);
+
+        // Guard against overly long names
+        char buf[PLAYER_NAME_SIZE];
+        CHECK_MSG(name_len < sizeof(buf),
+                  "Character name length %zu exceeds PLAYER_NAME_SIZE", name_len);
+
+        memcpy(buf, start, name_len);
+        buf[name_len] = '\0';
+
+        player_sendf(player, "  %s\n", buf);
+
+        if (!nl) break;
+        start = nl + 1;
     }
 }
 
