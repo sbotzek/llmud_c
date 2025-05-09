@@ -18,4 +18,7 @@ typedef struct Actor {
     // Add other component pointers here
 } Actor;
 
+void actor_init(Actor *actor, ActorID id);
+void actor_cleanup(Actor *actor);
+
 #endif
