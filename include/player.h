@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define PLAYER_NAME_SIZE 64
+#define PLAYER_NAME_SIZE 16
 
 typedef struct GameRules   GameRules;
 typedef struct World       World;
@@ -32,7 +32,6 @@ typedef void (*InputHandler)(
 );
 
 struct Player {
-    char          name[PLAYER_NAME_SIZE];
     PlayerState   state;
     void         *state_data;
     InputHandler  input_handler;
@@ -54,6 +53,8 @@ void    player_handle_input(Player *player, GameRules *rules, World *world, cons
 // — Output
 void    player_send(Player *player, const char *text);
 void    player_sendf(Player *player, const char *fmt, ...);
+
+char* player_name(Player *player);
 
 void player_register(Player *player);
 void player_unregister(Player *player);

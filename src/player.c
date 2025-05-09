@@ -45,6 +45,11 @@ void player_handle_input(Player *player, GameRules *rules, World *world, const c
     player->input_handler(rules, world, player, line);
 }
 
+char* player_name(Player *player) {
+    CHECK(player != NULL);
+    return player->account ? player->account->username : "?unknown?";
+}
+
 void player_register(Player *player) {
     CHECK(player != NULL);
     CHECK(player->next_in_registry == NULL);
