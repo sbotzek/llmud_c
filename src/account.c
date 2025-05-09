@@ -12,8 +12,6 @@
 #include <ctype.h>
 #include <crypt.h>    /* for crypt_gensalt/crypt */
 #include <stdio.h>    /* for FILE*, fopen, fprintf, fgets, snprintf, fclose */
-#include <sys/stat.h> /* for mkdir */
-#include <errno.h>
 
 /* where account files live */
 #define ACCOUNTS_DIR DATA_DIR "/accounts"
@@ -21,7 +19,6 @@
 /* static helpers */
 static char *make_account_filepath(const char *username);
 static char *generate_password_hash(const char *password);
-static void  ensure_directory(const char *path);
 
 static char *generate_password_hash(const char *password) {
     char *salt = crypt_gensalt("$6$", ACCOUNT_CRYPT_COST, NULL, 0);
@@ -150,10 +147,28 @@ static char *make_account_filepath(const char *username) {
     return p;
 }
 
-static void ensure_directory(const char *path) {
-    if (mkdir(path, 0755) != 0) {
-        if (errno != EEXIST) {
-            CHECK_MSG(false, "mkdir '%s' failed: %s", path, strerror(errno));
-        }
-    }
+void account_add_character(Account *account, const char *name) {
+    CHECK(account != NULL);
+    CHECK(name != NULL);
+    if (account->character_names.length > 0)
+        buffer_append_str(&account->character_names, " ");
+    buffer_append_str(&account->character_names, name);
+}
+
+void account_remove_character(Account *account, const char *name) {
+    CHECK(account != NULL);
+    CHECK(name != NULL);
+    char *start = account->character_names.data;
+    char *match = strstr(start, name);
+    CHECK_MSG(match != NULL, "Character not found in account_remove_character");
+
+    size_t len = strlen(name);
+    if (match[len] == ' ') len++;  // remove trailing space
+    memmove(match, match + len, strlen(match + len) + 1);
+}
+
+bool account_has_character(Account *account, const char *name) {
+    CHECK(account != NULL);
+    CHECK(name != NULL);
+    return str_token_contains(account->character_names.data, name);
 }

@@ -5,4 +5,6 @@
 /* I/O configuration for persistent data storage */
 #define DATA_DIR "./data"
 
+void ensure_directory(const char *path);
+
 #endif // IO_H
