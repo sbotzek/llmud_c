@@ -276,7 +276,7 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
     } else if (strcmp(line, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strncmp(line, "play", 4) == 0) {
-        char charname[TELNET_CONN_LINE_SIZE];
+        char charname[PLAYER_INPUT_SIZE];
         int got = sscanf(line, "play %63s", charname);
         if (got != 1) {
             player_send(player, "Available characters:\n");

@@ -3,15 +3,15 @@
 #define TELNET_CONN_H
 
 #include "buffer.h"
+#include "player.h"
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stddef.h>
 
-#define TELNET_CONN_LINE_SIZE 1024
 // store two lines + null terminator – we only really want 1 line at a time,
 // but we need more storage in case we read part of another line while still
 // trying to finish reading an overly long first line.
-#define TELNET_CONN_INPUT_BUFFER_SIZE   (2 * (TELNET_CONN_LINE_SIZE) + 1)
+#define TELNET_CONN_INPUT_BUFFER_SIZE   (2 * (PLAYER_INPUT_SIZE) + 1)
 
 typedef enum {
     TELNET_STATE_DATA,

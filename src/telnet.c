@@ -149,7 +149,7 @@ void telnet_read_tick(GameRules *rules, World *world) {
 }
 
 void telnet_process_input_tick(GameRules *rules, World *world) {
-    char line[TELNET_CONN_LINE_SIZE];
+    char line[PLAYER_INPUT_SIZE];
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];

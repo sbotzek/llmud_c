@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #define PLAYER_NAME_SIZE 16
+#define PLAYER_INPUT_SIZE 1024
 
 typedef struct GameRules   GameRules;
 typedef struct World       World;

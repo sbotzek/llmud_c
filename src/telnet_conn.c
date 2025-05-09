@@ -63,7 +63,7 @@ void telnet_conn_read(TelnetConn *conn) {
         return;
     }
 
-    char temp[TELNET_CONN_LINE_SIZE];
+    char temp[PLAYER_INPUT_SIZE];
     size_t read_limit;
 
     if (conn->input_discarding) {
@@ -128,7 +128,7 @@ void telnet_conn_read(TelnetConn *conn) {
             continue;
         }
 
-        if (conn->input_length < TELNET_CONN_LINE_SIZE - 1) {
+        if (conn->input_length < PLAYER_INPUT_SIZE - 1) {
             conn->input_buffer[conn->input_length++] = c;
         } else {
             conn->input_length     = 0;
@@ -268,8 +268,8 @@ bool telnet_conn_next_line(TelnetConn *conn, char *out) {
     if (copy_len > 0 && conn->input_buffer[copy_len - 1] == '\r') {
         --copy_len;
     }
-    if (copy_len > TELNET_CONN_LINE_SIZE - 1) {
-        copy_len = TELNET_CONN_LINE_SIZE - 1;
+    if (copy_len > PLAYER_INPUT_SIZE - 1) {
+        copy_len = PLAYER_INPUT_SIZE - 1;
     }
 
     // 3. Copy into user-supplied buffer and NUL-terminate
