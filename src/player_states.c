@@ -314,6 +314,8 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
     CHECK(rules != NULL);
     CHECK(world != NULL);
     CHECK(player != NULL);
+    CHECK(player->account != NULL);
+
     size_t len = strlen(line);
     bool valid = len > 0 && len < PLAYER_NAME_SIZE - 1;
     for (size_t i = 0; valid && i < len; ++i) {
@@ -321,10 +323,18 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
             valid = false;
         }
     }
+
     if (!valid) {
         player_send(player, "Invalid name. Use letters a-z only. Enter character name: ");
-    } else {
-        player_sendf(player, "Character '%s' created.\n", line);
-        player_state_enter_account_menu(rules, world, player);
+        return;
     }
+
+    if (account_has_character(player->account, line)) {
+        player_send(player, "You already have a character with that name. Choose another: ");
+        return;
+    }
+
+    player_create_character(player, line);
+    player_sendf(player, "Character '%s' created.\n", line);
+    player_state_enter_account_menu(rules, world, player);
 }

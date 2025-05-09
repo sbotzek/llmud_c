@@ -6,6 +6,10 @@
 #include "macros.h"
 #include "telnet_conn.h"
 #include "account.h"
+#include "buffer.h"
+#include "io.h"
+#include "file_chunk.h"
+#include "strutil.h"
 
 Player* player_registry;
 
@@ -81,4 +85,30 @@ Player *player_find_registered(const char *username) {
         player = player->next_in_registry;
     }
     return NULL;
+}
+
+void player_create_character(Player *player, const char *name) {
+    CHECK(player != NULL);
+    CHECK(player->account != NULL);
+    CHECK(name != NULL);
+
+    ensure_directory(DATA_DIR);
+    ensure_directory(DATA_DIR "/pcs");
+
+    Buffer path;
+    buffer_init(&path, 0);
+    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", name);
+
+    FILE *fp = fopen(path.data, "w");
+    CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
+
+    fprintf(fp, "#character\n");
+    file_chunk_write_field(fp, "name", name);
+    fprintf(fp, "#end character\n");
+
+    fclose(fp);
+    buffer_cleanup(&path);
+
+    account_add_character(player->account, str_copy(name));
+    account_save(player->account);
 }

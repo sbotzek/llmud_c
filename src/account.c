@@ -43,6 +43,7 @@ Account *account_new(const char *username, const char *password) {
 
     memcpy(account->username, username, ulen + 1);
     account->password_hash = generate_password_hash(password);
+    buffer_init(&account->character_names, 0);
 
     return account;
 }
@@ -60,6 +61,7 @@ void account_free(Account *account) {
         memset(account->password_hash, 0, strlen(account->password_hash));
         free(account->password_hash);
     }
+    buffer_cleanup(&account->character_names);
     free(account);
 }
 
@@ -88,6 +90,7 @@ void account_save(const Account *account) {
 
     file_chunk_write_field(f, "username", account->username);
     file_chunk_write_field(f, "password_hash", account->password_hash);
+    file_chunk_write_field(f, "character_names", account->character_names.data);
 
     CHECK_MSG(fclose(f) == 0, "Failed to close '%s'", path);
     free(path);
@@ -107,6 +110,7 @@ Account *account_load(const char *username) {
     file_chunk_reader_init(&r, f);
 
     Account *acc = calloc(1, sizeof(Account));
+    buffer_init(&acc->character_names, 0);
     CHECK(acc);
 
     while (file_chunk_read(&r)) {
@@ -121,6 +125,8 @@ Account *account_load(const char *username) {
         } else if (strcmp(r.chunk.tag.data, "password_hash") == 0) {
             acc->password_hash = str_copy(r.chunk.value.data);
             CHECK_MSG(acc->password_hash, "OOM loading password hash");
+        } else if (strcmp(r.chunk.tag.data, "character_names") == 0) {
+            buffer_append_str(&acc->character_names, r.chunk.value.data);
         } else {
             log_warn("Unknown account field '%s' at line %d", r.chunk.tag.data, r.line_number);
         }

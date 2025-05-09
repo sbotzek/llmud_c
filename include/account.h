@@ -5,11 +5,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "buffer.h"
+
 #define ACCOUNT_USERNAME_SIZE     32
 
 typedef struct Account {
     char   username[ACCOUNT_USERNAME_SIZE];
     char  *password_hash;   /* malloc’d copy of the crypt() output */
+    Buffer character_names;
 } Account;
 
 /**
@@ -48,5 +51,9 @@ void account_save(const Account *account);
  * Returns NULL if the file doesn't exist.  Aborts on OOM or malformed file.
  */
 Account *account_load(const char *username);
+
+void account_add_character(Account *account, const char *name);
+void account_remove_character(Account *account, const char *name);
+bool account_has_character(Account *account, const char *name);
 
 #endif // ACCOUNT_H
