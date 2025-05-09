@@ -55,4 +55,8 @@ void    player_handle_input(Player *player, GameRules *rules, World *world, cons
 void    player_send(Player *player, const char *text);
 void    player_sendf(Player *player, const char *fmt, ...);
 
+void player_register(Player *player);
+void player_unregister(Player *player);
+Player *player_find_registered(const char *username);
+
 #endif // PLAYER_H

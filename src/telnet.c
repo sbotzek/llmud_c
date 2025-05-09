@@ -23,7 +23,7 @@
 static int listener_fd = -1;
 static TelnetConn *connections[MAX_CONNECTIONS] = {0};
 
-static void accept_new_connections(World *world);
+static void accept_new_connections(void);
 static int make_socket_nonblocking(int fd);
 
 void telnet_listen_tick(GameRules *rules, World *world) {
@@ -52,10 +52,10 @@ void telnet_listen_tick(GameRules *rules, World *world) {
         log_info("Listening on port %d...", TELNET_PORT);
     }
 
-    accept_new_connections(world);
+    accept_new_connections();
 }
 
-static void accept_new_connections(World *world) {
+static void accept_new_connections() {
     struct sockaddr_in conn_addr;
     socklen_t addrlen = sizeof(conn_addr);
 
@@ -95,8 +95,9 @@ static void accept_new_connections(World *world) {
             continue;
         }
 
-        connections[slot]->player = world_new_player(world);
+        connections[slot]->player = player_new();
         connections[slot]->player->conn = connections[slot];
+        player_register(connections[slot]->player);
 
         player_state_enter_menu(NULL, NULL, connections[slot]->player);
         log_info("New connection: %s", connections[slot]->ip_string);

@@ -76,36 +76,3 @@ bool world_remove_actor(World *world, Actor *actor) {
     return true;
 }
 
-Player *world_new_player(World *world) {
-    CHECK(world != NULL);
-    Player *p = player_new();
-    p->next_in_registry = world->players_head;
-    world->players_head = p;
-    return p;
-}
-
-void world_free_player(World *world, Player *player) {
-    CHECK(world  != NULL);
-    CHECK(player != NULL);
-    Player **pp = &world->players_head;
-    while (*pp) {
-        if (*pp == player) {
-            *pp = player->next_in_registry;
-            break;
-        }
-        pp = &(*pp)->next_in_registry;
-    }
-    player_free(player);
-}
-
-Player *world_find_player_by_username(World *world, const char *username) {
-    CHECK(world != NULL);
-    for (Player *p = world->players_head; p; p = p->next_in_registry) {
-        if (p->account
-            && strcmp(p->account->username, username) == 0)
-        {
-            return p;
-        }
-    }
-    return NULL;
-}

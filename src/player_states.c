@@ -224,7 +224,7 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
 
     case ACC_LOGIN_PASSWORD:
         if (ctx->account && account_check_password(ctx->account, line)) {
-            Player *existing = world_find_player_by_username(world, ctx->username);
+            Player *existing = player_find_registered(ctx->username);
             if (existing) {
                 /* takeover existing Player */
                 if (existing->conn) {
@@ -239,7 +239,8 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
                 /* clean up just the temp Account and temp Player */
                 account_free(ctx->account);
                 free(ctx);
-                world_free_player(world, player);
+                player_unregister(player);
+                player_free(player);
 
                 player_send(existing, "Login successful.\n");
                 player_state_enter_account_menu(rules, world, existing);
@@ -270,7 +271,8 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
         player_send(player, "Goodbye!\n");
         player->conn->player = NULL;
         player->conn->connected = false;
-        world_free_player(world, player);
+        player_unregister(player);
+        player_free(player);
     } else if (strcmp(line, "create") == 0) {
         player_state_enter_character_creation(rules, world, player);
     } else if (strncmp(line, "play", 4) == 0) {
