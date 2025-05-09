@@ -43,6 +43,10 @@ void buffer_reserve(Buffer *buf, size_t needed_capacity);
 void buffer_vappendf(Buffer *buf, const char *fmt, va_list args);
 void buffer_appendf(Buffer *buf, const char *fmt, ...);
 
+// Replaces buffer contents with formatted text.
+void buffer_printf(Buffer *buf, const char *fmt, ...);
+
+
 // Trims leading and trailing whitespace from the buffer
 void buffer_trim(Buffer *buf);
 

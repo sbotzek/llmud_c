@@ -100,6 +100,42 @@ void buffer_unscratch(Buffer *buf) {
     CHECK_MSG(false, "buffer_unscratch: buffer not found in scratch list");
 }
 
+void buffer_printf(Buffer *buf, const char *fmt, ...) {
+    CHECK(buf != NULL);
+    CHECK(fmt != NULL);
+
+    va_list args;
+    va_start(args, fmt);
+
+    // Try to print into a fixed-size temp buffer first
+    char temp[512];
+    int needed = vsnprintf(temp, sizeof(temp), fmt, args);
+    va_end(args);
+
+    CHECK_MSG(needed >= 0, "buffer_printf: vsnprintf encoding error");
+
+    if ((size_t)needed < sizeof(temp)) {
+        buffer_clear(buf);
+        buffer_append_str(buf, temp);
+        return;
+    }
+
+    // Format was too long for temp — try again with dynamic allocation
+    char *big = malloc(needed + 1);
+    CHECK_MSG(big != NULL, "buffer_printf: OOM allocating %d bytes", needed + 1);
+
+    va_start(args, fmt);
+    int final = vsnprintf(big, needed + 1, fmt, args);
+    va_end(args);
+
+    CHECK_MSG(final == needed, "buffer_printf: inconsistent vsnprintf result");
+
+    buffer_clear(buf);
+    buffer_append_str(buf, big);
+    free(big);
+}
+
+
 void buffer_reserve(Buffer *buf, size_t needed_capacity) {
     if (needed_capacity <= buf->capacity) return;
     size_t new_capacity = buf->capacity ? buf->capacity : 64;
