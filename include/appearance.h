@@ -9,6 +9,7 @@ typedef struct FileChunkReader FileChunkReader;
 
 typedef struct Appearance {
     char *name;
+    char *long_name;
     char *description;
 } Appearance;
 

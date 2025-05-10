@@ -15,6 +15,7 @@ static void read_field(Appearance *a, const FileChunk *chunk);
 // appearance_init
 void appearance_init(Appearance *a) {
     a->name = NULL;
+    a->long_name = NULL;
     a->description = NULL;
 }
 
@@ -74,6 +75,10 @@ void appearance_write_section(const Appearance *a, FILE *fp) {
         file_chunk_write_field(fp, "name", a->name);
     }
 
+    if (a->long_name) {
+        file_chunk_write_field(fp, "long_name", a->description);
+    }
+
     if (a->description) {
         file_chunk_write_field(fp, "description", a->description);
     }
@@ -87,6 +92,9 @@ static void read_field(Appearance *a, const FileChunk *chunk) {
     if (strcmp(tag, "name") == 0) {
         free(a->name);
         a->name = str_copy(val);
+    } else if (strcmp(tag, "long_name") == 0) {
+        free(a->long_name);
+        a->long_name = str_copy(val);
     } else if (strcmp(tag, "description") == 0) {
         free(a->description);
         a->description = str_copy(val);
