@@ -34,6 +34,33 @@ bool str_token_contains(const char *list, const char *word) {
     return false;
 }
 
+void str_to_lower(char *s) {
+    if (!s) return;
+    for (; *s; s++) {
+        *s = (char)tolower((unsigned char)*s);
+    }
+}
+
+void str_to_upper(char *s) {
+    if (!s) return;
+    for (; *s; s++) {
+        *s = (char)toupper((unsigned char)*s);
+    }
+}
+
+void str_capitalize(char *s) {
+    if (!s || !*s) return;
+
+    // Capitalize the first character
+    *s = (char)toupper((unsigned char)*s);
+    s++;
+
+    // Lowercase the rest
+    for (; *s; s++) {
+        *s = (char)tolower((unsigned char)*s);
+    }
+}
+
 char *str_parse_word(char *input, char *word) {
     if (!input) {
         word[0] = '\0';
