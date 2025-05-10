@@ -105,11 +105,10 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player) 
     UNUSED(rules);
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
-    Actor *actor = world_new_actor(world);
-    if (!actor) {
-        player_send(player, "World is full. Try again later.\n");
-        return;
-    }
+
+    Actor *actor = actor_new();
+    world_add_actor(world, actor);
+
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
@@ -272,8 +271,11 @@ static void handle_account_menu_input(GameRules *rules,
     rest = str_parse_word(rest, arg);
 
     if (strcmp(cmd, "quit") == 0) {
-        if (player->actor)
+        if (player->actor) {
             world_remove_actor(world, player->actor);
+            actor_free(player->actor);
+            player->actor = NULL;
+        }
         player_send(player, "Goodbye!\n");
         player->conn->player = NULL;
         player->conn->connected = false;

@@ -159,6 +159,7 @@ void account_add_character(Account *account, const char *name) {
     if (account->character_names.length > 0)
         buffer_append_str(&account->character_names, " ");
     buffer_append_str(&account->character_names, name);
+    str_to_lower(account->character_names.data);
 }
 
 void account_remove_character(Account *account, const char *name) {

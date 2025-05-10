@@ -8,8 +8,10 @@
 #include "macros.h"
 #include "telnet_conn.h"
 #include "account.h"
+#include "actor.h"
 #include "buffer.h"
 #include "io.h"
+#include "log.h"
 #include "file_chunk.h"
 #include "strutil.h"
 
@@ -94,25 +96,93 @@ void player_create_character(Player *player, const char *name) {
     CHECK(player->account != NULL);
     CHECK(name != NULL);
 
+    Actor actor;
+    actor_init(&actor);
+    actor.appearance.name = str_copy(name);
+    str_capitalize(actor.appearance.name);
+
+    player_save_character(&actor);
+    actor_cleanup(&actor);
+
+    account_add_character(player->account, name);
+    account_save(player->account);
+}
+
+void player_save_character(Actor *actor) {
+
     ensure_directory(DATA_DIR);
     ensure_directory(DATA_DIR "/pcs");
 
     Buffer path;
     buffer_init(&path, 0);
-    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", name);
+    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name );
+    str_to_lower(path.data);
 
     FILE *fp = fopen(path.data, "w");
     CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
 
-    fprintf(fp, "#character\n");
-    file_chunk_write_field(fp, "name", name);
-    fprintf(fp, "#end character\n");
+    appearance_write_section(&actor->appearance, fp);
 
     fclose(fp);
     buffer_cleanup(&path);
+}
 
-    account_add_character(player->account, str_copy(name));
-    account_save(player->account);
+Actor *player_load_character(const char *name) {
+    CHECK(name != NULL);
+
+    Buffer *path = buffer_new(128);
+    buffer_printf(path, DATA_DIR "/pcs/%s.pchar", name);
+    str_to_lower(path->data);
+
+    FILE *fp = fopen(path->data, "r");
+    buffer_free(path);
+
+    if (!fp) {
+        // File doesn't exist.
+        return NULL;
+    }
+
+    FileChunkReader reader;
+    file_chunk_reader_init(&reader, fp);
+
+    // Allocate the actor
+    Actor *actor = actor_new();
+
+    // Begin reading fields
+    while (file_chunk_read(&reader)) {
+        FileChunk *chunk = &reader.chunk;
+
+        if (chunk->type == FILE_CHUNK_FIELD) {
+            if (strcmp(chunk->tag.data, "name") == 0) {
+                free(actor->appearance.name);
+                actor->appearance.name = str_copy(chunk->value.data);
+            } else if (strcmp(chunk->tag.data, "long_name") == 0) {
+                free(actor->appearance.long_name);
+                actor->appearance.long_name = str_copy(chunk->value.data);
+            } else if (strcmp(chunk->tag.data, "description") == 0) {
+                free(actor->appearance.description);
+                actor->appearance.description = str_copy(chunk->value.data);
+            } else {
+                log_warn("Unknown field '%s' while loading character '%s'", chunk->tag.data, name);
+            }
+        } else if (chunk->type == FILE_CHUNK_SECTION_START) {
+            log_warn("Unexpected section '%s' in player character '%s'", chunk->tag.data, name);
+        } else if (chunk->type == FILE_CHUNK_SECTION_END) {
+            log_warn("Unexpected end section '%s' in player character '%s'", chunk->tag.data, name);
+        }
+    }
+
+    file_chunk_reader_cleanup(&reader);
+    fclose(fp);
+
+    // Validate required fields
+    if (actor->appearance.name == NULL) {
+        log_error("player_load_character: Missing 'name' field for character '%s'", name);
+        actor_free(actor);
+        return NULL;
+    }
+
+    return actor;
 }
 
 bool player_validate_name(const char *name) {

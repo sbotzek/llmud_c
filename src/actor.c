@@ -3,21 +3,31 @@
 
 #include "player.h"
 #include "macros.h"
+#include "log.h"
 
-// Initialize an actor with the given ID.
-// Other components are zero-initialized. Actor is marked alive.
-void actor_init(Actor *actor, ActorID id) {
+static ActorID on_actor_id = 0;
+
+#define MAX_ACTOR_ID UINT32_MAX
+#define WARN_ON_ACTOR_ID (UINT32_MAX / 2)
+
+void actor_init(Actor *actor) {
     CHECK(actor != NULL);
 
     *actor = (Actor){
-        .id = id,
+        .id = ++on_actor_id,
         .alive = false
-        // appearance and player default to zero
     };
     appearance_init(&actor->appearance);
+
+    if (on_actor_id > WARN_ON_ACTOR_ID) {
+        if (on_actor_id == MAX_ACTOR_ID) {
+            log_fatal("Actor ID reached max value: %u", on_actor_id);
+        } else {
+            log_warn("Actor ID reached warn level: %u", on_actor_id);
+        }
+    }
 }
 
-// Clean up resources owned by the actor. Does not free the actor itself.
 void actor_cleanup(Actor *actor) {
     CHECK(actor != NULL);
 
@@ -31,4 +41,20 @@ void actor_cleanup(Actor *actor) {
     }
 
     appearance_cleanup(&actor->appearance);
+}
+
+Actor* actor_new() {
+    Actor *actor = calloc(1, sizeof(Actor));
+    CHECK_MSG(actor != NULL, "actor_new: malloc actor failed");
+
+    actor_init(actor);
+
+    return actor;
+}
+
+void actor_free(Actor* actor) {
+    CHECK(actor != NULL);
+    actor_cleanup(actor);
+    free(actor);
+
 }

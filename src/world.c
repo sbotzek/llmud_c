@@ -4,45 +4,25 @@
 #include "macros.h"
 #include "log.h"
 
-#include <string.h>
-
-static bool warned_actor_count = false;
+#include <stdlib.h>
 
 World *world_new() {
     World *world = calloc(1, sizeof(World));
-    CHECK_MSG(world != NULL, "world_new: malloc player failed");
-
+    CHECK_MSG(world != NULL, "world_new: calloc World failed");
     return world;
 }
 
-Actor *world_new_actor(World *world) {
+void world_add_actor(World *world, Actor *actor) {
     CHECK(world != NULL);
+    CHECK(actor != NULL);
 
-    // Try to reuse a dead slot
-    for (size_t i = 0; i < world->actor_count; ++i) {
-        if (!world->actors[i].alive) {
-            Actor *actor = &world->actors[i];
-            actor_init(actor, (ActorID)i);
-            actor->alive = true;
-            return actor;
-        }
-    }
+    ActorNode *node = calloc(1, sizeof(ActorNode));
+    CHECK_MSG(node != NULL, "world_add_actor: calloc ActorNode failed");
 
-    if (!warned_actor_count &&
-        world->actor_count >= (MAX_ACTORS * 9) / 10) {
-        warned_actor_count = true;
-        log_warn("Actor count nearing capacity: %zu/%d", world->actor_count, MAX_ACTORS);
-        }
-
-    CHECK_MSG(world->actor_count < MAX_ACTORS,
-              "cannot create actor: actor_count=%zu, max=%d",
-              world->actor_count, MAX_ACTORS);
-
-    Actor *actor = &world->actors[world->actor_count];
-    actor_init(actor, (ActorID)world->actor_count);
     actor->alive = true;
-    world->actor_count++;
-    return actor;
+    node->actor = actor;
+    node->next = world->actors;
+    world->actors = node;
 }
 
 bool world_remove_actor(World *world, Actor *actor) {
@@ -50,11 +30,18 @@ bool world_remove_actor(World *world, Actor *actor) {
     CHECK(actor != NULL);
     CHECK_MSG(actor->alive,
               "attempted to remove a dead actor (id=%u)", actor->id);
-    CHECK_MSG(actor->id < world->actor_count,
-              "actor ID out of bounds: id=%u, actor_count=%zu",
-              actor->id, world->actor_count);
 
     actor->alive = false;
-    actor_cleanup(actor);
-    return true;
+
+    ActorNode **pp = &world->actors;
+    while (*pp) {
+        ActorNode *node = *pp;
+        if (node->actor == actor) {
+            *pp = node->next;
+            free(node);
+            return true;
+        }
+    }
+
+    return false;
 }

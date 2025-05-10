@@ -3,22 +3,28 @@
 #define ACTOR_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "appearance.h"
 
-typedef unsigned int ActorID;
-#define INVALID_ACTOR_ID ((ActorID)-1)
+typedef uint32_t ActorID;
+#define INVALID_ACTOR_ID 0
 
 typedef struct Player Player;
 
 typedef struct Actor {
     ActorID id;
     bool alive;
-    Appearance appearance;
     Player *player;
+
+    Appearance appearance;
+
     // Add other component pointers here
 } Actor;
 
-void actor_init(Actor *actor, ActorID id);
+void actor_init(Actor *actor);
 void actor_cleanup(Actor *actor);
+
+Actor* actor_new();
+void actor_free(Actor* actor);
 
 #endif

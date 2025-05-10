@@ -1,24 +1,27 @@
-/* world.h */
+// world.h
 #ifndef WORLD_H
 #define WORLD_H
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "actor.h"
 
-#define MAX_ACTORS 65536
+#include "actor.h"
 
 typedef struct Player Player;
 
+typedef struct ActorNode {
+    Actor *actor;
+    struct ActorNode *next;
+} ActorNode;
+
 typedef struct World {
-    Actor    actors[MAX_ACTORS];
-    size_t   actor_count;
+    ActorNode *actors;
 } World;
 
 World *world_new();
 
-/* actor management (unchanged) */
-Actor *world_new_actor(World *world);
+/* actor management */
+void world_add_actor(World *world, Actor *actor);
 bool   world_remove_actor(World *world, Actor *actor);
 
 #endif // WORLD_H

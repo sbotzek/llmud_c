@@ -55,6 +55,8 @@ void    player_send(Player *player, const char *text);
 void    player_sendf(Player *player, const char *fmt, ...);
 
 void player_create_character(Player *player, const char *name);
+void player_save_character(Actor *actor);
+Actor *player_load_character(const char *name);
 
 char* player_name(Player *player);
 
