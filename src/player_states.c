@@ -381,6 +381,11 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
         return;
     }
 
+    if (player_name_exists(line)) {
+        player_send(player, "That name is already taken. Choose another: ");
+        return;
+    }
+
     player_create_character(player, line);
     player_sendf(player, "Character '%s' created.\n", line);
     player_state_enter_account_menu(rules, world, player);

@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <dirent.h> // For directory scanning
 
 #include "macros.h"
 #include "telnet_conn.h"
@@ -127,4 +128,43 @@ bool player_validate_name(const char *name) {
     }
 
     return true;
+}
+
+bool player_name_exists(const char *name) {
+    CHECK(name != NULL);
+
+    // First: check the player_registry (logged-in players)
+    Player *player = player_registry;
+    while (player) {
+        if (player->account && account_has_character(player->account, name)) {
+            return true;
+        }
+        player = player->next_in_registry;
+    }
+
+    // Second: check the pcs/ directory for stored characters
+    ensure_directory(DATA_DIR);
+    ensure_directory(DATA_DIR "/pcs");
+
+    DIR *dir = opendir(DATA_DIR "/pcs");
+    CHECK_MSG(dir != NULL, "Failed to open pcs directory");
+
+    struct dirent *entry;
+    size_t name_len = strlen(name);
+
+    while ((entry = readdir(dir)) != NULL) {
+        const char *filename = entry->d_name;
+        size_t filename_len = strlen(filename);
+
+        // Match: <name>.pchar
+        if (filename_len == name_len + 6 && // ".pchar" = 6 chars
+            strncmp(filename, name, name_len) == 0 &&
+            strcmp(filename + name_len, ".pchar") == 0) {
+            closedir(dir);
+            return true;
+            }
+    }
+
+    closedir(dir);
+    return false;
 }

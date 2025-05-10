@@ -65,4 +65,6 @@ Player *player_find_registered(const char *username);
 // — Validation
 bool player_validate_name(const char *name);
 
+bool player_name_exists(const char *name);
+
 #endif // PLAYER_H
