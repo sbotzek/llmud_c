@@ -1,4 +1,4 @@
-/* player.h */
+// player.h
 #ifndef PLAYER_H
 #define PLAYER_H
 
@@ -40,7 +40,6 @@ struct Player {
     Actor        *actor;
     TelnetConn   *conn;
 
-    /* linked‐list pointer for registry of all players */
     Player       *next_in_registry;
 };
 
@@ -63,5 +62,7 @@ void player_register(Player *player);
 void player_unregister(Player *player);
 Player *player_find_registered(const char *username);
 
+// — Validation
+bool player_validate_name(const char *name);
 
 #endif // PLAYER_H

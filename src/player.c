@@ -2,6 +2,7 @@
 #include "player.h"
 
 #include <string.h>
+#include <ctype.h>
 
 #include "macros.h"
 #include "telnet_conn.h"
@@ -42,7 +43,6 @@ void player_sendf(Player *player, const char *fmt, ...) {
     va_end(args);
 }
 
-
 void player_handle_input(Player *player, GameRules *rules, World *world, const char *line) {
     CHECK(player != NULL);
 
@@ -74,6 +74,7 @@ void player_unregister(Player *player) {
         pp = &(*pp)->next_in_registry;
     }
 }
+
 Player *player_find_registered(const char *username) {
     CHECK(username != NULL);
 
@@ -111,4 +112,19 @@ void player_create_character(Player *player, const char *name) {
 
     account_add_character(player->account, str_copy(name));
     account_save(player->account);
+}
+
+bool player_validate_name(const char *name) {
+    if (name == NULL) return false;
+
+    size_t len = strlen(name);
+    if (len < 3 || len > 10) return false;
+
+    for (size_t i = 0; i < len; ++i) {
+        if (!isalpha((unsigned char)name[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }

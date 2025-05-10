@@ -371,14 +371,8 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
     CHECK(player != NULL);
     CHECK(player->account != NULL);
 
-    size_t len = strlen(line);
-    bool valid = len > 0 && len < PLAYER_NAME_SIZE - 1;
-    for (size_t i = 0; valid && i < len; ++i) {
-        if (line[i] < 'a' || line[i] > 'z') valid = false;
-    }
-
-    if (!valid) {
-        player_send(player, "Invalid name. Use letters a-z only. Enter character name: ");
+    if (!player_validate_name(line)) {
+        player_send(player, "Invalid name. Use 3-10 alphabetic characters only. Enter character name: ");
         return;
     }
 
