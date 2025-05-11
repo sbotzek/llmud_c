@@ -157,14 +157,7 @@ Actor *player_load_character(const char *name) {
                 appearance_read_section(&actor->appearance, &reader, chunk->tag.data);
             } else {
                 log_warn("Unknown section '%s' while loading character '%s'", chunk->tag.data, name);
-
-                // Skip the unknown section
-                while (file_chunk_read(&reader)) {
-                    if (reader.chunk.type == FILE_CHUNK_SECTION_END &&
-                        strcmp(reader.chunk.tag.data, chunk->tag.data) == 0) {
-                        break;
-                    }
-                }
+                file_chunk_skip_section(&reader, chunk->tag.data);
             }
         } else if (chunk->type == FILE_CHUNK_SECTION_END) {
             // Should not happen at top level; log it

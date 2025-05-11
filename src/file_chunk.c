@@ -149,6 +149,20 @@ static void parse_chunk(FileChunkReader *r) {
     r->chunk.type = FILE_CHUNK_FIELD;
 }
 
+bool file_chunk_skip_section(FileChunkReader *r, const char *section) {
+    CHECK(r != NULL);
+    CHECK(section != NULL);
+
+    while (file_chunk_read(r)) {
+        if (r->chunk.type == FILE_CHUNK_SECTION_END &&
+            strcmp(r->chunk.tag.data, section) == 0) {
+            return true;
+            }
+    }
+
+    log_warn("file_chunk_skip_section: Unterminated section #%s", section);
+    return false;
+}
 
 void file_chunk_write_field(FILE *fp, const char *tag, const char *value) {
     CHECK(fp);

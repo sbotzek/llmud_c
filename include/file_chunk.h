@@ -71,6 +71,9 @@ void file_chunk_reader_cleanup(FileChunkReader *r);
 
 // Returns true if another chunk was read, false on EOF or error
 bool file_chunk_read(FileChunkReader *r);
+// Skips until the end of the given section is found.
+// Returns true if #end <section> found successfully, false on EOF.
+bool file_chunk_skip_section(FileChunkReader *r, const char *section);
 
 // writes a field of the format:
 // <tag>: <value>~
