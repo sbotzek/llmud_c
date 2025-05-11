@@ -43,7 +43,7 @@ void appearance_free(Appearance *a) {
 }
 
 // appearance_read_section
-void appearance_read_section(Appearance *a, FileChunkReader *r) {
+void appearance_read_section(Appearance *a, FileChunkReader *r, const char *section) {
     CHECK(a != NULL);
     CHECK(r != NULL);
 
@@ -51,7 +51,7 @@ void appearance_read_section(Appearance *a, FileChunkReader *r) {
         FileChunk *chunk = &r->chunk;
 
         if (chunk->type == FILE_CHUNK_SECTION_END &&
-            strcmp(chunk->tag.data, "appearance") == 0) {
+            strcmp(chunk->tag.data, section) == 0) {
             return;
         }
 
@@ -67,9 +67,11 @@ void appearance_read_section(Appearance *a, FileChunkReader *r) {
 }
 
 // appearance_write_section
-void appearance_write_section(const Appearance *a, FILE *fp) {
+void appearance_write_section(const Appearance *a, FILE *fp, const char *section) {
     CHECK(a != NULL);
     CHECK(fp != NULL);
+
+    file_chunk_write_section_start(fp, section);
 
     if (a->name) {
         file_chunk_write_field(fp, "name", a->name);
@@ -82,6 +84,8 @@ void appearance_write_section(const Appearance *a, FILE *fp) {
     if (a->description) {
         file_chunk_write_field(fp, "description", a->description);
     }
+
+    file_chunk_write_section_end(fp, section);
 }
 
 // read_field

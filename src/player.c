@@ -109,19 +109,21 @@ void player_create_character(Player *player, const char *name) {
 }
 
 void player_save_character(Actor *actor) {
+    CHECK(actor != NULL);
 
     ensure_directory(DATA_DIR);
     ensure_directory(DATA_DIR "/pcs");
 
     Buffer path;
     buffer_init(&path, 0);
-    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name );
+    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name);
     str_to_lower(path.data);
 
     FILE *fp = fopen(path.data, "w");
     CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
 
-    appearance_write_section(&actor->appearance, fp);
+    // Write sections
+    appearance_write_section(&actor->appearance, fp, "appearance");
 
     fclose(fp);
     buffer_cleanup(&path);
@@ -138,49 +140,51 @@ Actor *player_load_character(const char *name) {
     buffer_free(path);
 
     if (!fp) {
-        // File doesn't exist.
-        return NULL;
+        return NULL; // File doesn't exist.
     }
 
+    Actor *actor = actor_new();
     FileChunkReader reader;
     file_chunk_reader_init(&reader, fp);
 
-    // Allocate the actor
-    Actor *actor = actor_new();
-
-    // Begin reading fields
+    // Read chunks
     while (file_chunk_read(&reader)) {
         FileChunk *chunk = &reader.chunk;
 
-        if (chunk->type == FILE_CHUNK_FIELD) {
-            if (strcmp(chunk->tag.data, "name") == 0) {
-                free(actor->appearance.name);
-                actor->appearance.name = str_copy(chunk->value.data);
-            } else if (strcmp(chunk->tag.data, "long_name") == 0) {
-                free(actor->appearance.long_name);
-                actor->appearance.long_name = str_copy(chunk->value.data);
-            } else if (strcmp(chunk->tag.data, "description") == 0) {
-                free(actor->appearance.description);
-                actor->appearance.description = str_copy(chunk->value.data);
+        if (chunk->type == FILE_CHUNK_SECTION_START) {
+            if (strcmp(chunk->tag.data, "appearance") == 0) {
+                // Hand off appearance parsing
+                appearance_read_section(&actor->appearance, &reader, chunk->tag.data);
             } else {
-                log_warn("Unknown field '%s' while loading character '%s'", chunk->tag.data, name);
+                log_warn("Unknown section '%s' while loading character '%s'", chunk->tag.data, name);
+
+                // Skip the unknown section
+                while (file_chunk_read(&reader)) {
+                    if (reader.chunk.type == FILE_CHUNK_SECTION_END &&
+                        strcmp(reader.chunk.tag.data, chunk->tag.data) == 0) {
+                        break;
+                    }
+                }
             }
-        } else if (chunk->type == FILE_CHUNK_SECTION_START) {
-            log_warn("Unexpected section '%s' in player character '%s'", chunk->tag.data, name);
         } else if (chunk->type == FILE_CHUNK_SECTION_END) {
-            log_warn("Unexpected end section '%s' in player character '%s'", chunk->tag.data, name);
+            // Should not happen at top level; log it
+            log_warn("Unexpected section end '%s' while loading character '%s'", chunk->tag.data, name);
+        } else if (chunk->type == FILE_CHUNK_FIELD) {
+            log_warn("Unexpected field '%s' at top level while loading character '%s'", chunk->tag.data, name);
         }
     }
 
     file_chunk_reader_cleanup(&reader);
     fclose(fp);
 
-    // Validate required fields
+    // Validate appearance name (minimum field needed for a PC)
     if (actor->appearance.name == NULL) {
-        log_error("player_load_character: Missing 'name' field for character '%s'", name);
+        log_error("player_load_character: Missing appearance.name for character '%s'", name);
         actor_free(actor);
         return NULL;
     }
+
+    actor->appearance.long_name = str_copy(actor->appearance.name);
 
     return actor;
 }

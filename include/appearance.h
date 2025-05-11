@@ -21,9 +21,9 @@ void appearance_cleanup(Appearance *a);
 Appearance *appearance_new(void);
 void        appearance_free(Appearance *a);
 
-// Read/write section format, excluding the #appearance / #end appearance headers
-// Caller must handle section dispatch and boundaries
-void appearance_read_section(Appearance *a, FileChunkReader *r);
-void appearance_write_section(const Appearance *a, FILE *fp);
+// Read section.  Expects the start section to already have been read, Will read until the #end <section>
+void appearance_read_section(Appearance *a, FileChunkReader *r, const char *section);
+// Write section, including start and end
+void appearance_write_section(const Appearance *a, FILE *fp, const char *section);
 
 #endif // APPEARANCE_H
