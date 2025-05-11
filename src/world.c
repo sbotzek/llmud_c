@@ -38,6 +38,7 @@ bool world_remove_actor(World *world, Actor *actor) {
         ActorNode *node = *pp;
         if (node->actor == actor) {
             *pp = node->next;
+            node->actor = NULL;
             free(node);
             return true;
         }

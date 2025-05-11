@@ -357,9 +357,10 @@ static void handle_playing_input(GameRules *rules, World *world, Player *player,
     char *rest = str_parse_word((char *)line, cmd);
 
     if (strcmp(cmd, "quit") == 0) {
-        if (player->actor) world_remove_actor(world, player->actor);
+        world_remove_actor(world, player->actor);
+        actor_free(player->actor);
         player_send(player, "You leave the game world.\n");
-        player_state_enter_menu(rules, world, player);
+        player_state_enter_account_menu(rules, world, player);
     } else {
         char *msg = rest ? rest : "";
         while (*msg && isspace((unsigned char)*msg)) msg++;
