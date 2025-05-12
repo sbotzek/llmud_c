@@ -16,10 +16,14 @@ typedef struct ScratchHeader {
 static ScratchHeader *scratch_head = NULL;
 
 void buffer_init(Buffer *buf, size_t initial_capacity) {
+    if (initial_capacity == 0) {
+        initial_capacity = 1;
+    }
     buf->data = malloc(initial_capacity);
     CHECK_MSG(buf->data != NULL, "buffer_init: malloc of %zu bytes failed", initial_capacity);
     buf->length = 0;
     buf->capacity = initial_capacity;
+    buf->data[0] = '\0';
 }
 
 void buffer_cleanup(Buffer *buf) {
