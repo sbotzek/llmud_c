@@ -8,6 +8,7 @@
 #include "log.h"
 #include "game_rules.h"
 #include "macros.h"
+#include "config.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -18,7 +19,6 @@
 #include <arpa/inet.h>
 
 #define MAX_CONNECTIONS 128
-#define TELNET_PORT 4000
 
 static int listener_fd = -1;
 static TelnetConn *connections[MAX_CONNECTIONS] = {0};
@@ -40,7 +40,7 @@ void telnet_listen_tick(GameRules *rules, World *world) {
 
         struct sockaddr_in addr = {0};
         addr.sin_family = AF_INET;
-        addr.sin_port   = htons(TELNET_PORT);
+        addr.sin_port   = htons(g_config.port);
         addr.sin_addr.s_addr = INADDR_ANY;
 
         if (bind(listener_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
@@ -49,7 +49,7 @@ void telnet_listen_tick(GameRules *rules, World *world) {
             log_fatal("Failed to initialize listener: %s", strerror(errno));
         }
 
-        log_info("Listening on port %d...", TELNET_PORT);
+        log_info("Listening on port %d...", g_config.port);
     }
 
     accept_new_connections();
