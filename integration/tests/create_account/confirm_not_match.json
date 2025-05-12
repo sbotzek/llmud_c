@@ -1,0 +1,19 @@
+{
+  "mode": "script",
+  "clients": {
+    "player": "localhost:4000"
+  },
+  "script": [
+    { "client": "player", "fn": "expect", "text": "Welcome" },
+    { "client": "player", "fn": "send", "text": "create" },
+    { "client": "player", "fn": "expect", "text": "username" },
+    { "client": "player", "fn": "send", "text": "bobby" },
+    { "client": "player", "fn": "expect", "text": "password" },
+    { "client": "player", "fn": "send", "text": "passw" },
+    { "client": "player", "fn": "expect", "text": "Confirm" },
+    { "client": "player", "fn": "send", "text": "passw2" },
+    { "client": "player", "fn": "expect", "text": "do not match" },
+    { "fn": "file_not_exists", "file": "data/accounts/bobby.acct" }
+  ]
+}
+

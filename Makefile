@@ -49,3 +49,10 @@ test: $(TEST_BINS)
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
 
+integration-test: $(TARGET)
+	cd integration && { \
+		../$(TARGET) --test-mode > mud_server.log 2>&1 & \
+		sleep 1; \
+		python3 test_runner.py tests/**/*.json; \
+		kill %1; \
+	}

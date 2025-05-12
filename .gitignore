@@ -2,3 +2,5 @@
 mud
 /data/
 /.idea/
+/integration/mud_server.log
+/integration/data/
