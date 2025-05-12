@@ -6,13 +6,18 @@
 #include "world.h"
 #include "tick.h"
 #include "log.h"
-#include "game_rules.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 
 static void sleep_until_next_tick(struct timespec *next_tick) {
+    // Don't sleep in test mode so we can run our tests as fast as possible.
+    if (g_config.test_mode) {
+        return;
+    }
+
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
 

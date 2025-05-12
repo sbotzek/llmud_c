@@ -6,6 +6,7 @@
 #include "file_chunk.h"
 #include "strutil.h"
 #include "log.h"
+#include "config.h"
 #include "io.h"       /* for DATA_DIR */
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,10 @@ static char *make_account_filepath(const char *username);
 static char *generate_password_hash(const char *password);
 
 static char *generate_password_hash(const char *password) {
+    if (g_config.test_mode) {
+        return str_copy(password); // Don't hash in test mode.
+    }
+
     char *salt = crypt_gensalt("$6$", ACCOUNT_CRYPT_COST, NULL, 0);
     CHECK_MSG(salt, "crypt_gensalt failed");
     char *hash = crypt(password, salt);
@@ -50,6 +55,9 @@ Account *account_new(const char *username, const char *password) {
 
 bool account_check_password(const Account *account, const char *password) {
     CHECK(account && account->password_hash);
+    if (g_config.test_mode) {
+        return strcmp(password, account->password_hash) == 0;
+    }
     char *calc = crypt(password, account->password_hash);
     CHECK_MSG(calc, "crypt failed");
     return strcmp(calc, account->password_hash) == 0;
