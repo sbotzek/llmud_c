@@ -1,0 +1,16 @@
+{
+  "description": "Non-existent account login fails",
+  "mode": "script",
+  "data_template": "tests/account_login/data/",
+  "clients": {
+    "player": "localhost:4000"
+  },
+  "script": [
+    { "client": "player", "fn": "expect", "text": "Welcome" },
+    { "client": "player", "fn": "send", "text": "login" },
+    { "client": "player", "fn": "expect", "text": "username" },
+    { "client": "player", "fn": "send", "text": "bobby2" },
+    { "client": "player", "fn": "expect", "text": "No such account" }
+  ]
+}
+
