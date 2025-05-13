@@ -187,6 +187,11 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             ctx->password = NULL;
             ctx->step = ACC_CREATE_PASSWORD;
             player_send(player, "Passwords do not match. Enter password: ");
+        } else if (account_username_exists(world, ctx->username)) {
+            player_send(player, "Username already in use. Enter username: ");
+            ctx->step = ACC_CREATE_USERNAME;
+            free(ctx->password);
+            ctx->password = NULL;
         } else {
             Account *acct = account_new(ctx->username, ctx->password);
             account_save(acct);
