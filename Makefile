@@ -51,8 +51,8 @@ clean:
 
 integration-test: $(TARGET)
 	cd integration && { \
-		../$(TARGET) --test-mode > mud_server.log 2>&1 & \
+		../$(TARGET) --test-mode --port 4444 > mud_server.log 2>&1 & \
 		sleep 1; \
-		python3 test_runner.py tests/**/*.json; \
+		python3 test_runner.py tests/**/*.py; \
 		kill %1; \
 	}

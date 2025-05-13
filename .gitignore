@@ -5,3 +5,4 @@ mud
 /integration/mud_server.log
 /integration/test_runner.log
 /integration/data/
+__pycache__/
