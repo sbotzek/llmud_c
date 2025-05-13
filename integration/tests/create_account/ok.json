@@ -1,4 +1,5 @@
 {
+  "description": "Make sure the game is in a valid state after successfully creating an account",
   "mode": "script",
   "clients": {
     "player": "localhost:4000"

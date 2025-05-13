@@ -1,4 +1,5 @@
 {
+  "description": "Create account rejects duplicate usernames",
   "mode": "script",
   "clients": {
     "player": "localhost:4000",

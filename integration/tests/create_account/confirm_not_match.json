@@ -1,4 +1,5 @@
 {
+  "description": "When creating account, make sure it isn't created if confirm password doesn't match",
   "mode": "script",
   "clients": {
     "player": "localhost:4000"
