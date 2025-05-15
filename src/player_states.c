@@ -101,12 +101,15 @@ void player_state_enter_account_menu(GameRules *rules, World *world, Player *pla
     );
 }
 
-void player_state_enter_playing(GameRules *rules, World *world, Player *player) {
+void player_state_enter_playing(GameRules *rules, World *world, Player *player, const char *name) {
     UNUSED(rules);
+    CHECK(account_has_character(player->account, name));
+
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
 
-    Actor *actor = actor_new();
+    Actor *actor = player_load_character(name);
+    CHECK(actor != NULL);
     world_add_actor(world, actor);
 
     actor->player = player;
@@ -304,12 +307,7 @@ static void handle_account_menu_input(GameRules *rules,
                 player_sendf(player, "Unknown character '%s'. Available characters:\n", arg);
                 list_account_characters(player);
             } else {
-                // stash chosen name in state_data for the playing state to pick up
-                char *selected = str_copy(arg);
-                CHECK_MSG(selected != NULL, "Out of memory allocating character name");
-                player->state_data = selected;
-
-                player_state_enter_playing(rules, world, player);
+                player_state_enter_playing(rules, world, player, arg);
             }
         }
 

@@ -18,6 +18,6 @@ void player_state_enter_account_menu(GameRules *rules, World *world, Player *pla
 void player_state_enter_character_creation(GameRules *rules, World *world, Player *player);
 
 // Playing state
-void player_state_enter_playing(GameRules *rules, World *world, Player *player);
+void player_state_enter_playing(GameRules *rules, World *world, Player *player, const char *name);
 
 #endif // PLAYER_STATES_H
