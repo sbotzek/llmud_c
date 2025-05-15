@@ -28,6 +28,10 @@ Player *player_new() {
 
 void player_free(Player *player) {
     CHECK(player != NULL);
+    if (player->account) {
+        account_free(player->account);
+        player->account = NULL;
+    }
     free(player);
 }
 
