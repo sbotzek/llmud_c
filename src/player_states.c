@@ -284,7 +284,10 @@ static void handle_account_menu_input(GameRules *rules,
             actor_free(player->actor);
             player->actor = NULL;
         }
-        player_send(player, "Goodbye!\n");
+        if (player->conn) {
+            player_send(player, "Goodbye!\n");
+            telnet_conn_flush(player->conn);
+        }
         player->conn->player = NULL;
         player->conn->connected = false;
         player_unregister(player);
