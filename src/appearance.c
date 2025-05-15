@@ -22,8 +22,10 @@ void appearance_init(Appearance *a) {
 // appearance_cleanup
 void appearance_cleanup(Appearance *a) {
     free(a->name);
+    free(a->long_name);
     free(a->description);
     a->name = NULL;
+    a->long_name = NULL;
     a->description = NULL;
 }
 
@@ -78,7 +80,7 @@ void appearance_write_section(const Appearance *a, FILE *fp, const char *section
     }
 
     if (a->long_name) {
-        file_chunk_write_field(fp, "long_name", a->description);
+        file_chunk_write_field(fp, "long_name", a->long_name);
     }
 
     if (a->description) {
