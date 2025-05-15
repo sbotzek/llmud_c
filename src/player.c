@@ -10,10 +10,12 @@
 #include "account.h"
 #include "actor.h"
 #include "buffer.h"
+#include "config.h"
 #include "io.h"
 #include "log.h"
 #include "file_chunk.h"
 #include "strutil.h"
+#include "world.h"
 
 Player* player_registry;
 
@@ -49,6 +51,19 @@ void player_sendf(Player *player, const char *fmt, ...) {
 void player_handle_input(Player *player, GameRules *rules, World *world, const char *line) {
     CHECK(player != NULL);
 
+    // For testing, makes it easier to cleanly disconnect a connection
+    if (g_config.test_mode && strcmp(line, "killconn") == 0) {
+        log_info("account killconn: %s as %s", player->conn->ip_string,
+            (player->account == NULL ? NULL : player->account->username));
+        if (player->actor) {
+            world_remove_actor(world, player->actor);
+            actor_free(player->actor);
+            player->actor = NULL;
+        }
+        player_unregister(player);
+        player_free(player);
+        return;
+    }
     player->input_handler(rules, world, player, line);
 }
 

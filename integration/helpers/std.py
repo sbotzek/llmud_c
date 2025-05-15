@@ -134,6 +134,7 @@ class Client:
 
     def disconnect(self):
         if self.sock:
+            self.sock.sendall(('killconn\n').encode('utf-8'))
             self.sock.close()
             log_line(f"[info] Disconnected client '{self.name}'")
 
