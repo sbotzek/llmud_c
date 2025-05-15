@@ -93,6 +93,7 @@ class Client:
         self.host = 'localhost'
         self.port = 4444
         self.sock = socket.create_connection((self.host, self.port))
+        self.connected = True
         self.sock.settimeout(0.5)
         self.buffer = ""
         _all_clients.append(self)
@@ -105,10 +106,15 @@ class Client:
     def read_available(self):
         try:
             data = self.sock.recv(4096)
-            if data:
-                text = data.decode('utf-8', errors='ignore')
-                log_line(f"[recv] ({self.name}): {repr(text)}")
-                self.buffer += text
+            if not data:
+                log_line(f"[info] Client '{self.name}' disconnected (socket closed)")
+                self.connected = False
+                self.sock.close()
+                self.sock = None
+                return
+            text = data.decode('utf-8', errors='ignore')
+            log_line(f"[recv] ({self.name}): {repr(text)}")
+            self.buffer += text
         except socket.timeout:
             pass
         except Exception as e:
@@ -118,6 +124,8 @@ class Client:
         end_time = time.time() + timeout
         while time.time() < end_time:
             self.read_available()
+            if not self.connected:
+                log_fail(f"Client '{self.name}' disconnected unexpectedly while waiting for text '{substring}'.")
             if substring in self.buffer:
                 log_pass(f"({self.name}) saw expected text: '{substring}'")
                 return
