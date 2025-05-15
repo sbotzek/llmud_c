@@ -202,6 +202,7 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             free(ctx);
             player->state_data = NULL;
             player->account = acct;
+            log_info("account created: %s as %s", player->conn->ip_string, player->account->username);
             player_send(player, "Account created.\n");
             player_state_enter_account_menu(rules, world, player);
         }
@@ -247,12 +248,14 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
                 free(ctx);
                 player_unregister(player);
                 player_free(player);
+                log_info("account reconnect: %s as %s", existing->conn->ip_string, existing->account->username);
                 player_send(existing, "Login successful.\n");
                 player_state_enter_account_menu(rules, world, existing);
             } else {
                 player->state_data = NULL;
                 player->account    = ctx->account;
                 free(ctx);
+                log_info("account login: %s as %s", player->conn->ip_string, player->account->username);
                 player_send(player, "Login successful.\n");
                 player_state_enter_account_menu(rules, world, player);
             }
@@ -288,6 +291,7 @@ static void handle_account_menu_input(GameRules *rules,
             player_send(player, "Goodbye!\n");
             telnet_conn_flush(player->conn);
         }
+        log_info("account quit: %s as %s", player->conn->ip_string, player->account->username);
         player->conn->player = NULL;
         player->conn->connected = false;
         player_unregister(player);
