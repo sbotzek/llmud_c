@@ -40,17 +40,22 @@ bool file_chunk_read(FileChunkReader *r) {
     buffer_clear(&r->raw);
     chunk_reset(&r->chunk);
 
+    int first_ch;
     int ch;
     while ((ch = fgetc(r->fp)) != EOF) {
         r->line_number++;
 
-        while (ch != '~' && ch != EOF) {
+        first_ch = ch;
+        while (ch != '~'
+            && (first_ch != '#' || (ch != '\r' && ch != '\n'))
+            && ch != EOF) {
             buffer_append(&r->raw, (char *)&ch, 1);
             ch = fgetc(r->fp);
         }
 
-        if (ch == EOF) {
-            // Unexpected EOF without tilde
+        if (ch == EOF && strncmp(r->raw.data, "#end ", 5) != 0) {
+            // Unexpected EOF without tilde or end section
+            log_warn("Unexpected eof");
             return false;
         }
 
@@ -63,6 +68,8 @@ bool file_chunk_read(FileChunkReader *r) {
         // Got a full raw line, parse it
         trim_trailing_newlines(&r->raw);
         parse_chunk(r);
+
+        log_info("Got chunk tag %s, data %s", r->chunk.tag.data, r->chunk.value.data);
         return true;
     }
 
