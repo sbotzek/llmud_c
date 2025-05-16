@@ -105,11 +105,16 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
     UNUSED(rules);
     CHECK(account_has_character(player->account, name));
 
+    Actor *actor = player_load_character(name);
+    if (actor == NULL) {
+        player_send(player, "Error loading character.\n");
+        player_state_enter_account_menu(rules, world, player);
+        return;
+    }
+
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
 
-    Actor *actor = player_load_character(name);
-    CHECK(actor != NULL);
     world_add_actor(world, actor);
 
     actor->player = player;
