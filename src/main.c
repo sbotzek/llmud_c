@@ -13,7 +13,6 @@ int main(int argc, char **argv) {
     GameRules *rules = game_rules_new();
 
     const GameProcess processes[] = {
-        {.name="event.gc",               .tick=event_gc_tick,              .frequency=1},
         {.name="telnet.listen",          .tick=telnet_listen_tick,         .frequency=1},
         {.name="telnet.read",            .tick=telnet_read_tick,           .frequency=1},
         {.name="telnet.process_input",   .tick=telnet_process_input_tick,  .frequency=1},

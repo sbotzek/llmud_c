@@ -4,8 +4,6 @@
 
 #include "game_process.h"
 
-void event_gc_tick(GameRules *rules, World *world);
-
 void telnet_listen_tick(GameRules *rules, World *world);
 void telnet_read_tick(GameRules *rules, World *world);
 void telnet_process_input_tick(GameRules *rules, World *world);
