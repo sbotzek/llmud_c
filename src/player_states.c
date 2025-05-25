@@ -51,6 +51,10 @@ static void handle_account_menu_input(GameRules *rules, World *world, Player *pl
 static void handle_playing_input(GameRules *rules, World *world, Player *player, const char *line);
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line);
 
+// playing state command handlers
+static void cmd_quit(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_look(GameRules *rules, World *world, Player *player, const char *args);
+
 // State entry functions
 void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
     UNUSED(rules);
@@ -128,8 +132,7 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
-    player_send(player, room->name);
-    player_send(player, "\n");
+    cmd_look(rules, world, player, "");
 }
 
 void player_state_enter_character_creation(GameRules *rules, World *world, Player *player) {
@@ -382,15 +385,35 @@ static void handle_playing_input(GameRules *rules, World *world, Player *player,
     char *rest = str_parse_word((char *)line, cmd);
 
     if (strcmp(cmd, "quit") == 0) {
-        world_remove_actor(world, player->actor);
-        actor_free(player->actor);
-        player_send(player, "You leave the game world.\n");
-        player_state_enter_account_menu(rules, world, player);
+        cmd_quit(rules, world, player, rest);
+    } else if (strcmp(cmd, "look") == 0) {
+        cmd_look(rules, world, player, rest);
     } else {
-        char *msg = rest ? rest : "";
-        while (*msg && isspace((unsigned char)*msg)) msg++;
-        player_sendf(player, "You say: %s\n", msg);
+        player_sendf(player, "Unknown command '%s'.\n", cmd);
     }
+}
+
+static void cmd_quit(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(rules);
+    UNUSED(args);
+
+    world_remove_actor(world, player->actor);
+    actor_free(player->actor);
+    player_send(player, "You leave the game world.\n");
+    player_state_enter_account_menu(rules, world, player);
+}
+
+static void cmd_look(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(rules);
+    UNUSED(args);
+
+    Room *room = world_find_room(world, player->actor->in_room_id);
+    if (room == NULL) {
+        player_send(player, "You are in nothingness.\n");
+        return;
+    }
+
+    player_sendf(player, "%s\n", room->name);
 }
 
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {
