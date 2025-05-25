@@ -1,0 +1,14 @@
+#room
+id: 1~
+name: The Starting Room~
+#end room
+
+#room
+id: 2~
+name: A Dusty Hallway~
+#end room
+
+#room
+id: 3~
+name: The Treasure Vault~
+#end room

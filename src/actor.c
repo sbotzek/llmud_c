@@ -15,6 +15,7 @@ void actor_init(Actor *actor) {
 
     *actor = (Actor){
         .id = ++on_actor_id,
+        .in_room_id = INVALID_ROOM_ID,
         .alive = false
     };
     appearance_init(&actor->appearance);

@@ -180,6 +180,16 @@ void file_chunk_write_field(FILE *fp, const char *tag, const char *value) {
     CHECK_MSG(written >= 0, "Failed to write field '%s'", tag);
 }
 
+void file_chunk_write_int_field(FILE *fp, const char *tag, int value) {
+    CHECK(fp);
+    CHECK(tag);
+    CHECK(value);
+
+    int written = fprintf(fp, "%s:%d~\n", tag, value);
+    CHECK_MSG(written >= 0, "Failed to write field '%s'", tag);
+}
+
+
 void file_chunk_write_section_inline(FILE *fp, const char *section, const char *args) {
     CHECK(fp);
     CHECK(section);

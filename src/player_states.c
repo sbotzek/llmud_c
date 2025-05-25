@@ -112,6 +112,14 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
         return;
     }
 
+    Room *room = world_find_room(world, actor->in_room_id);
+    if (room == NULL) {
+        player_sendf(player, "Error loading character: could not find room %d!\n", actor->in_room_id);
+        player_state_enter_account_menu(rules, world, player);
+        return;
+    }
+
+
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
 
@@ -120,6 +128,8 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
+    player_send(player, room->name);
+    player_send(player, "\n");
 }
 
 void player_state_enter_character_creation(GameRules *rules, World *world, Player *player) {

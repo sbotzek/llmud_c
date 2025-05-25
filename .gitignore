@@ -1,6 +1,7 @@
 /obj/
 mud
-/data/
+/data/accounts/
+/data/pcs/
 /.idea/
 /integration/mud_server.log
 /integration/test_runner.log

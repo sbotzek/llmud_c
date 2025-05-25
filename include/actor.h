@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "appearance.h"
+#include "room.h"
 
 typedef uint32_t ActorID;
 #define INVALID_ACTOR_ID 0
@@ -18,8 +19,14 @@ typedef struct Actor {
 
     Appearance appearance;
 
-    // Add other component pointers here
+    RoomID in_room_id;
+
 } Actor;
+
+typedef struct ActorNode {
+    Actor *actor;
+    struct ActorNode *next;
+} ActorNode;
 
 void actor_init(Actor *actor);
 void actor_cleanup(Actor *actor);

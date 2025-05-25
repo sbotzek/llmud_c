@@ -4,11 +4,13 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "room.h"
 
 // Global configuration options for the MUD.
 typedef struct Config {
     bool     test_mode;         // Run in test mode: no sleeps, no password hashing
     uint16_t port;              // Listening port (e.g., 4000)
+    RoomID start_in_room_id;
 } Config;
 
 // The active global config.

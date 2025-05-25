@@ -2,6 +2,7 @@
 #include "server.h"
 #include "world.h"
 #include "config.h"
+#include "room.h"
 #include "game_rules.h"
 #include "game_process.h"
 #include "game_processes.h"
@@ -11,6 +12,8 @@ int main(int argc, char **argv) {
 
     World *world = world_new();
     GameRules *rules = game_rules_new();
+
+    room_load_all(world);
 
     const GameProcess processes[] = {
         {.name="telnet.listen",          .tick=telnet_listen_tick,         .frequency=1},

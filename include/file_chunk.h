@@ -78,6 +78,7 @@ bool file_chunk_skip_section(FileChunkReader *r, const char *section);
 // writes a field of the format:
 // <tag>: <value>~
 void file_chunk_write_field(FILE *fp, const char *tag, const char *value);
+void file_chunk_write_int_field(FILE *fp, const char *tag, int value);
 // writes an inline section:
 // #<section> <args>~
 void file_chunk_write_section_inline(FILE *fp, const char *section, const char *args);

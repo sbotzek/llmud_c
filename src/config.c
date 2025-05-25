@@ -8,6 +8,7 @@
 Config g_config = {
     .test_mode = false,
     .port = 4000,
+    .start_in_room_id = 1
 };
 
 void config_init(int argc, char **argv) {

@@ -117,6 +117,7 @@ void player_create_character(Player *player, const char *name) {
 
     Actor actor;
     actor_init(&actor);
+    actor.in_room_id = g_config.start_in_room_id;
     actor.appearance.name = str_copy(name);
     str_capitalize(actor.appearance.name);
 
@@ -140,6 +141,9 @@ void player_save_character(Actor *actor) {
 
     FILE *fp = fopen(path.data, "w");
     CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
+
+    // Write fields
+    file_chunk_write_int_field(fp, "in_room_id", actor->in_room_id);
 
     // Write sections
     appearance_write_section(&actor->appearance, fp, "appearance");
@@ -182,7 +186,11 @@ Actor *player_load_character(const char *name) {
             // Should not happen at top level; log it
             log_warn("Unexpected section end '%s' while loading character '%s'", chunk->tag.data, name);
         } else if (chunk->type == FILE_CHUNK_FIELD) {
-            log_warn("Unexpected field '%s' at top level while loading character '%s'", chunk->tag.data, name);
+            if (strcmp(chunk->tag.data, "in_room_id") == 0) {
+                actor->in_room_id = (RoomID)atoi(chunk->value.data);
+            } else {
+                log_warn("Unexpected field '%s' at top level while loading character '%s'", chunk->tag.data, name);
+            }
         }
     }
 
@@ -194,6 +202,12 @@ Actor *player_load_character(const char *name) {
         log_error("player_load_character: Missing appearance.name for character '%s'", name);
         actor_free(actor);
         return NULL;
+    }
+    if (actor->in_room_id == INVALID_ROOM_ID) {
+        log_error("player_load_character: Invalid room id for character '%s'", name);
+        actor_free(actor);
+        return NULL;
+
     }
 
     actor->appearance.long_name = str_copy(actor->appearance.name);
