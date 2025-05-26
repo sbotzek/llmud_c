@@ -58,6 +58,14 @@ void telnet_conn_free(TelnetConn *conn) {
     free(conn);
 }
 
+void telnet_conn_disconnect(TelnetConn *conn) {
+    CHECK(conn != NULL);
+    if (!conn->connected) return;
+
+    close(conn->socket_fd);
+    conn->connected = false;
+}
+
 void telnet_conn_read(TelnetConn *conn) {
     if (conn->input_line_ready) {
         return;

@@ -256,6 +256,9 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
             Player *existing = player_find_registered(ctx->username);
             if (existing) {
                 if (existing->conn) {
+                    telnet_conn_write(existing->conn, "\nYour account was logged into from another connection.\n");
+                    telnet_conn_flush(existing->conn);
+
                     existing->conn->player = NULL;
                     existing->conn->connected = false;
                 }
@@ -267,7 +270,7 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
                 player_unregister(player);
                 player_free(player);
                 log_info("account reconnect: %s as %s", existing->conn->ip_string, existing->account->username);
-                player_send(existing, "Login successful.\n");
+                player_send(existing, "\nPrevious session resumed.\n");
                 player_state_enter_account_menu(rules, world, existing);
             } else {
                 player->state_data = NULL;
