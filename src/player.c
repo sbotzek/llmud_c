@@ -110,26 +110,39 @@ Player *player_find_registered(const char *username) {
     return NULL;
 }
 
-void player_create_character(Player *player, const char *name) {
+void player_create_character(Player *player, const char *name, World *world) {
     CHECK(player != NULL);
     CHECK(player->account != NULL);
     CHECK(name != NULL);
 
     Actor actor;
     actor_init(&actor);
-    actor.in_room_id = g_config.start_in_room_id;
+    actor.location_id = g_config.start_location_id;
     actor.appearance.name = str_copy(name);
     str_capitalize(actor.appearance.name);
 
-    player_save_character(&actor);
+    player_save_character(&actor, world);
     actor_cleanup(&actor);
 
     account_add_character(player->account, name);
     account_save(player->account);
 }
 
-void player_save_character(Actor *actor) {
+void player_save_character(Actor *actor, World *world) {
     CHECK(actor != NULL);
+
+    // Need to find a persistent actor to save this under
+    ActorID location_id = actor->location_id;
+    while (location_id > MAX_PERSISTENT_ACTOR_ID) {
+        Actor *location = world_find_actor(world, location_id);
+        if (location) {
+            location_id = location->location_id;
+        } else {
+            log_error("player_save_character: Could not find actor %u to save character under (in actor %u)",
+                location_id, actor->location_id);
+            return;
+        }
+    }
 
     ensure_directory(DATA_DIR);
     ensure_directory(DATA_DIR "/pcs");
@@ -143,7 +156,7 @@ void player_save_character(Actor *actor) {
     CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
 
     // Write fields
-    file_chunk_write_int_field(fp, "in_room_id", actor->in_room_id);
+    file_chunk_write_int_field(fp, "location_id", location_id);
 
     // Write sections
     appearance_write_section(&actor->appearance, fp, "appearance");
@@ -186,8 +199,8 @@ Actor *player_load_character(const char *name) {
             // Should not happen at top level; log it
             log_warn("Unexpected section end '%s' while loading character '%s'", chunk->tag.data, name);
         } else if (chunk->type == FILE_CHUNK_FIELD) {
-            if (strcmp(chunk->tag.data, "in_room_id") == 0) {
-                actor->in_room_id = (RoomID)atoi(chunk->value.data);
+            if (strcmp(chunk->tag.data, "location_id") == 0) {
+                actor->location_id = (ActorID)atoi(chunk->value.data);
             } else {
                 log_warn("Unexpected field '%s' at top level while loading character '%s'", chunk->tag.data, name);
             }
@@ -203,7 +216,7 @@ Actor *player_load_character(const char *name) {
         actor_free(actor);
         return NULL;
     }
-    if (actor->in_room_id == INVALID_ROOM_ID) {
+    if (actor->location_id == INVALID_ACTOR_ID || actor->location_id > MAX_PERSISTENT_ACTOR_ID) {
         log_error("player_load_character: Invalid room id for character '%s'", name);
         actor_free(actor);
         return NULL;

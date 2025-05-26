@@ -1,20 +1,24 @@
 // room.c
 #include "room.h"
+
+#include <math.h>
+
 #include "file_chunk.h"
 #include "macros.h"
 #include "log.h"
 #include "world.h"
 #include "io.h"
+#include "strutil.h"
+#include "actor.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#include "../include/macros.h"
 
 #define ROOMS_PATH DATA_DIR "/rooms.txt"
 
-static Room *read_one_room(FileChunkReader *r);
+static Actor *read_one_room(FileChunkReader *r);
 
 void room_load_all(World *world) {
     CHECK(world != NULL);
@@ -32,10 +36,10 @@ void room_load_all(World *world) {
     while (file_chunk_read(&r)) {
         if (r.chunk.type == FILE_CHUNK_SECTION_START &&
             strcmp(r.chunk.tag.data, "room") == 0) {
-            Room *room = read_one_room(&r);
-            if (room) {
-                world_add_room(world, room);
-                log_info("Loaded room [%u]: %s", room->id, room->name);
+            Actor *actor = read_one_room(&r);
+            if (actor) {
+                world_add_actor(world, actor);
+                log_info("Loaded room [%u]: %s", actor->id, actor->appearance.name);
             }
         } else {
             log_warn("Skipping unknown top-level section '%s'", r.chunk.tag.data);
@@ -47,14 +51,10 @@ void room_load_all(World *world) {
     fclose(fp);
 }
 
-static Room *read_one_room(FileChunkReader *r) {
+static Actor *read_one_room(FileChunkReader *r) {
     CHECK(r != NULL);
 
-    Room *room = calloc(1, sizeof(Room));
-    CHECK_MSG(room != NULL, "OOM allocating Room");
-
-    bool got_id = false;
-    bool got_name = false;
+    Actor *actor = NULL;
 
     while (file_chunk_read(r)) {
         FileChunk *chunk = &r->chunk;
@@ -70,56 +70,29 @@ static Room *read_one_room(FileChunkReader *r) {
         }
 
         if (strcmp(chunk->tag.data, "id") == 0) {
-            room->id = (RoomID)atoi(chunk->value.data);
-            got_id = true;
+            ActorID id = (ActorID)atoi(chunk->value.data);
+
+            actor = actor_new_persistent(id);
+            actor->room = calloc(1, sizeof(Room));
+            CHECK_MSG(actor->room != NULL, "OOM allocating Room");
         } else if (strcmp(chunk->tag.data, "name") == 0) {
-            strncpy(room->name, chunk->value.data, ROOM_NAME_SIZE - 1);
-            room->name[ROOM_NAME_SIZE - 1] = '\0';
-            got_name = true;
+            actor->appearance.name = str_copy(chunk->value.data);
+            actor->appearance.long_name = str_copy(chunk->value.data);
         } else {
             log_warn("Unknown room field: %s", chunk->tag.data);
         }
     }
 
-    if (!got_id || !got_name) {
-        log_error("Skipping invalid room (missing id or name)");
-        free(room);
+    if (actor == NULL) {
+        log_error("Skipping invalid room (no id)");
+        actor_free(actor);
         return NULL;
     }
+    if (actor->appearance.name == NULL) {
+        log_error("Skipping invalid room %d: missing name", actor->id);
+        actor_free(actor);
+        return NULL;
 
-    return room;
-}
-
-void room_add_actor(Room *room, Actor *actor) {
-    CHECK(actor->in_room_id == INVALID_ROOM_ID);
-
-    actor->in_room_id = room->id;
-
-    ActorNode *node = calloc(1, sizeof(ActorNode));
-
-    node->actor = actor;
-    node->next = room->actors;
-    room->actors = node;
-}
-
-void room_remove_actor(Room *room, Actor *actor) {
-    ActorNode **pp = &room->actors;
-
-    while (*pp) {
-        ActorNode *node = *pp;
-        if (node->actor == actor) {
-            *pp = node->next;
-            node->actor = NULL;
-            actor->in_room_id = INVALID_ROOM_ID;
-            free(node);
-            return;
-        }
     }
-
-    CHECK_MSG(false, "room_remove_actor: actor not found in room");
-}
-
-void room_move_actor(Room *room, Actor *actor, Room *new_room) {
-    room_remove_actor(room, actor);
-    room_add_actor(new_room, actor);
+    return actor;
 }

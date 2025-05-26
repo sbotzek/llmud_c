@@ -116,9 +116,9 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
         return;
     }
 
-    Room *room = world_find_room(world, actor->in_room_id);
-    if (room == NULL) {
-        player_sendf(player, "Error loading character: could not find room %d!\n", actor->in_room_id);
+    Actor *location = world_find_actor(world, actor->location_id);
+    if (location == NULL) {
+        player_sendf(player, "Error loading character: could not find location %d!\n", actor->location_id);
         player_state_enter_account_menu(rules, world, player);
         return;
     }
@@ -410,13 +410,13 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
     UNUSED(rules);
     UNUSED(args);
 
-    Room *room = world_find_room(world, player->actor->in_room_id);
-    if (room == NULL) {
+    Actor *location = world_find_actor(world, player->actor->location_id);
+    if (location == NULL) {
         player_send(player, "You are in nothingness.\n");
         return;
     }
 
-    player_sendf(player, "%s\n", room->name);
+    player_sendf(player, "%s\n", location->appearance.name);
 }
 
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {
@@ -440,7 +440,7 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
         return;
     }
 
-    player_create_character(player, line);
+    player_create_character(player, line, world);
     player_sendf(player, "Character '%s' created.\n", line);
     player_state_enter_account_menu(rules, world, player);
 }

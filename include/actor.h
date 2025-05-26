@@ -9,18 +9,19 @@
 
 typedef uint32_t ActorID;
 #define INVALID_ACTOR_ID 0
+#define MAX_PERSISTENT_ACTOR_ID 9999999
 
 typedef struct Player Player;
 
 typedef struct Actor {
     ActorID id;
     bool alive;
-    Player *player;
-
+    ActorID location_id;
+    struct ActorNode *contents;
     Appearance appearance;
 
-    RoomID in_room_id;
-
+    Player *player;
+    Room *room;
 } Actor;
 
 typedef struct ActorNode {
@@ -29,9 +30,15 @@ typedef struct ActorNode {
 } ActorNode;
 
 void actor_init(Actor *actor);
+void actor_init_persistent(Actor *actor, ActorID id);
 void actor_cleanup(Actor *actor);
 
 Actor* actor_new();
+Actor* actor_new_persistent(ActorID id);
 void actor_free(Actor* actor);
+
+void actor_add_contents(Actor *location, Actor *contents);
+void actor_remove_contents(Actor *location, Actor *contents);
+void actor_move_contents(Actor *location, Actor *contents, Actor *new_location);
 
 #endif
