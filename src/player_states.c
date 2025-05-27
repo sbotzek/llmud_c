@@ -416,7 +416,52 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
         return;
     }
 
+    if (args[0]) {
+        Direction dir = string_to_direction(args);
+        if (dir == DIR_COUNT) {
+            player_send(player, "Unknown direction.\n");
+            return;
+        }
+
+        Exit *exit = location->room ? location->room->exits[dir] : NULL;
+        if (!exit) {
+            player_sendf(player, "You see nothing special to the %s.\n", args);
+            return;
+        }
+
+        const char *state = exit->open ? "open" : "closed";
+        const char *desc = exit->description ? exit->description : "An exit.";
+        player_sendf(player, "%s (%s)\n", desc, state);
+        return;
+    }
+
+    // Normal room look
     player_sendf(player, "%s\n", location->appearance.name);
+
+    // Show exits
+    if (location->room) {
+        Buffer *buf = buffer_new_scratch(64);
+        buffer_append_str(buf, "Exits: ");
+        bool first = true;
+        for (int i = 0; i < DIR_COUNT; ++i) {
+            Exit *e = location->room->exits[i];
+            if (!e) continue;
+
+            if (!first) buffer_append_str(buf, " ");
+            first = false;
+
+            const char *name = direction_to_string((Direction)i);
+            if (e->open) {
+                buffer_append_str(buf, name);
+            } else {
+                buffer_appendf(buf, "[%s]", name);
+            }
+        }
+
+        buffer_append_str(buf, "\n");
+        player_send(player, buf->data);
+    }
+
 }
 
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {

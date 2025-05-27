@@ -64,11 +64,6 @@ static Actor *read_one_room(FileChunkReader *r) {
             break;
         }
 
-        if (chunk->type != FILE_CHUNK_FIELD) {
-            log_warn("Unexpected chunk in room section at line %d", r->line_number);
-            continue;
-        }
-
         if (strcmp(chunk->tag.data, "id") == 0) {
             ActorID id = (ActorID)atoi(chunk->value.data);
 
@@ -78,6 +73,35 @@ static Actor *read_one_room(FileChunkReader *r) {
         } else if (strcmp(chunk->tag.data, "name") == 0) {
             actor->appearance.name = str_copy(chunk->value.data);
             actor->appearance.long_name = str_copy(chunk->value.data);
+        } else if (strcmp(chunk->tag.data, "exit") == 0) {
+            Exit *exit = calloc(1, sizeof(Exit));
+            char *args = chunk->value.data;
+            char word[1024];
+
+            args = str_parse_word(args, word);
+            exit->dir = string_to_direction(word);
+
+            if (args) {
+                args = str_parse_word(args, word);
+                exit->to_room = (ActorID)atoi(word);
+            }
+
+            if (args) {
+                args = str_parse_word(args, word);
+                exit->open = strcmp(word, "true") == 0;
+            }
+
+            if (args) {
+                exit->keyword = str_copy(args);
+            }
+
+            if (actor->room->exits[exit->dir] != NULL) {
+                log_warn("Duplicate exit %d for %d.", exit->dir, actor->id);
+                free(actor->room->exits[exit->dir]->keyword);
+                actor->room->exits[exit->dir]->keyword = NULL;
+                free(actor->room->exits[exit->dir]);
+            }
+            actor->room->exits[exit->dir] = exit;
         } else {
             log_warn("Unknown room field: %s", chunk->tag.data);
         }
@@ -95,4 +119,28 @@ static Actor *read_one_room(FileChunkReader *r) {
 
     }
     return actor;
+}
+
+
+const char *direction_to_string(Direction dir) {
+    switch (dir) {
+        case DIR_NORTH: return "north";
+        case DIR_SOUTH: return "south";
+        case DIR_EAST:  return "east";
+        case DIR_WEST:  return "west";
+        case DIR_UP:    return "up";
+        case DIR_DOWN:  return "down";
+        default:        return "";
+    }
+}
+
+Direction string_to_direction(const char *s) {
+    if (!s) return DIR_COUNT;
+    if (strcmp(s, "north") == 0) return DIR_NORTH;
+    if (strcmp(s, "south") == 0) return DIR_SOUTH;
+    if (strcmp(s, "east")  == 0) return DIR_EAST;
+    if (strcmp(s, "west")  == 0) return DIR_WEST;
+    if (strcmp(s, "up")    == 0) return DIR_UP;
+    if (strcmp(s, "down")  == 0) return DIR_DOWN;
+    return DIR_COUNT;
 }

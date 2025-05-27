@@ -5,13 +5,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "appearance.h"
-#include "room.h"
 
 typedef uint32_t ActorID;
 #define INVALID_ACTOR_ID 0
 #define MAX_PERSISTENT_ACTOR_ID 9999999
 
 typedef struct Player Player;
+typedef struct Room Room;
 
 typedef struct Actor {
     ActorID id;
