@@ -88,7 +88,7 @@ static Actor *read_one_room(FileChunkReader *r) {
 
             if (args) {
                 args = str_parse_word(args, word);
-                exit->open = strcmp(word, "true") == 0;
+                exit->closed = strcmp(word, "true") == 0;
             }
 
             if (args) {

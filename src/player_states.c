@@ -54,6 +54,13 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
 // playing state command handlers
 static void cmd_quit(GameRules *rules, World *world, Player *player, const char *args);
 static void cmd_look(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_move(GameRules *rules, World *world, Player *player, Direction dir);
+static void cmd_north(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_south(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_east(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_west(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_up(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_down(GameRules *rules, World *world, Player *player, const char *args);
 
 // State entry functions
 void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
@@ -132,7 +139,7 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
-    cmd_look(rules, world, player, "");
+    cmd_look(rules, world, player, NULL);
 }
 
 void player_state_enter_character_creation(GameRules *rules, World *world, Player *player) {
@@ -391,6 +398,18 @@ static void handle_playing_input(GameRules *rules, World *world, Player *player,
         cmd_quit(rules, world, player, rest);
     } else if (strcmp(cmd, "look") == 0) {
         cmd_look(rules, world, player, rest);
+    } else if (strcmp(cmd, "north") == 0) {
+        cmd_north(rules, world, player, rest);
+    } else if (strcmp(cmd, "south") == 0) {
+        cmd_south(rules, world, player, rest);
+    } else if (strcmp(cmd, "east") == 0) {
+        cmd_east(rules, world, player, rest);
+    } else if (strcmp(cmd, "west") == 0) {
+        cmd_west(rules, world, player, rest);
+    } else if (strcmp(cmd, "up") == 0) {
+        cmd_up(rules, world, player, rest);
+    } else if (strcmp(cmd, "down") == 0) {
+        cmd_down(rules, world, player, rest);
     } else {
         player_sendf(player, "Unknown command '%s'.\n", cmd);
     }
@@ -416,10 +435,10 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
         return;
     }
 
-    if (args[0]) {
+    if (args) {
         Direction dir = string_to_direction(args);
         if (dir == DIR_COUNT) {
-            player_send(player, "Unknown direction.\n");
+            player_sendf(player, "You see no '%s' here.\n", args);
             return;
         }
 
@@ -429,7 +448,7 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
             return;
         }
 
-        const char *state = exit->open ? "open" : "closed";
+        const char *state = exit->closed ? "closed" : "open";
         const char *desc = exit->description ? exit->description : "An exit.";
         player_sendf(player, "%s (%s)\n", desc, state);
         return;
@@ -451,10 +470,10 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
             first = false;
 
             const char *name = direction_to_string((Direction)i);
-            if (e->open) {
-                buffer_append_str(buf, name);
-            } else {
+            if (e->closed) {
                 buffer_appendf(buf, "[%s]", name);
+            } else {
+                buffer_append_str(buf, name);
             }
         }
 
@@ -463,6 +482,63 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
     }
 
 }
+
+static void cmd_move(GameRules *rules, World *world, Player *player, Direction dir) {
+    Actor *actor = player->actor;
+    Actor *from = world_find_actor(world, actor->location_id);
+
+    if (!from || !from->room) {
+        player_send(player, "You can't go anywhere from here.\n");
+        return;
+    }
+
+    Exit *exit = from->room->exits[dir];
+    if (!exit) {
+        player_send(player, "You can't go that way.\n");
+        return;
+    }
+
+    if (exit->closed) {
+        player_send(player, "The way is closed.\n");
+        return;
+    }
+
+    Actor *dest = world_find_actor(world, exit->to_room);
+    if (!dest) {
+        player_send(player, "You can't go that way.\n");
+        return;
+    }
+
+    actor->location_id = dest->id;
+    player_sendf(player, "You go %s.\n", direction_to_string(dir));
+    cmd_look(rules, world, player, NULL);
+}
+
+static void cmd_north(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_NORTH);
+}
+static void cmd_south(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_SOUTH);
+}
+static void cmd_east(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_EAST);
+}
+static void cmd_west(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_WEST);
+}
+static void cmd_up(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_UP);
+}
+static void cmd_down(GameRules *rules, World *world, Player *player, const char *args) {
+    UNUSED(args);
+    cmd_move(rules, world, player, DIR_DOWN);
+}
+
 
 static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {
     CHECK(rules != NULL);

@@ -21,7 +21,7 @@ typedef struct Exit {
     Direction   dir;          // direction this exit faces
     ActorID     to_room;      // where it leads
     char       *keyword;      // optional: "oak door"
-    bool        open;         // true if open
+    bool        closed;       // false if open
     char       *description;  // what you see when looking that direction
 } Exit;
 
