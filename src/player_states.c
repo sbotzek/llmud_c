@@ -445,12 +445,14 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
         Exit *exit = location->room ? location->room->exits[dir] : NULL;
         if (!exit) {
             player_sendf(player, "You see nothing special to the %s.\n", args);
-            return;
+        } else if (exit->keyword && exit->closed) {
+            player_sendf(player, "The %s is closed.\n", exit->keyword);
+        } else if (exit->keyword && !exit->closed) {
+            player_sendf(player, "The %s is open.\n", exit->keyword);
+        } else if (exit->closed) {
+            player_sendf(player, "The way is closed.\n");
         }
 
-        const char *state = exit->closed ? "closed" : "open";
-        const char *desc = exit->description ? exit->description : "An exit.";
-        player_sendf(player, "%s (%s)\n", desc, state);
         return;
     }
 
@@ -499,7 +501,7 @@ static void cmd_move(GameRules *rules, World *world, Player *player, Direction d
     }
 
     if (exit->closed) {
-        player_send(player, "The way is closed.\n");
+        player_sendf(player, "The %s is closed.\n", exit->keyword);
         return;
     }
 
