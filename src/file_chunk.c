@@ -101,47 +101,36 @@ static void parse_chunk(FileChunkReader *r) {
 
     // SECTION START or END
     if (line[0] == '#') {
-        if (strncmp(line, "#end ", 5) == 0) {
-            r->chunk.type = FILE_CHUNK_SECTION_END;
-            buffer_append_str(&r->chunk.tag, line + 5);
-            buffer_trim(&r->chunk.tag);
-            return;
-        }
+        const char *rest = line + 1;
+        const char *space = strchr(rest, ' ');
 
-        // Check for trailing ~ (single-line section)
-        const char *tilde = strrchr(line, '~');
-        if (tilde) {
-            // Strip trailing ~ for processing
-            size_t len = tilde - line;
-            Buffer temp;
-            buffer_init(&temp, len + 1);
-            buffer_append(&temp, line, len);
-            buffer_append(&temp, "\0", 1); // null-terminate
-
-            const char *section = temp.data + 1; // skip '#'
-            const char *space = strchr(section, ' ');
-            if (space) {
-                size_t section_len = space - section;
-                buffer_append(&r->chunk.tag, section, section_len);
-                buffer_append_str(&r->chunk.value, space + 1);
-            } else {
-                buffer_append_str(&r->chunk.tag, section);
-            }
-            r->chunk.type = FILE_CHUNK_SECTION_START;
-            buffer_trim(&r->chunk.tag);
-            buffer_trim(&r->chunk.value);
-            buffer_cleanup(&temp);
-            return;
+        if (space) {
+            size_t tag_len = space - rest;
+            buffer_append(&r->chunk.tag, rest, tag_len);
+            buffer_append_str(&r->chunk.value, space + 1);
         } else {
-            // Multi-line section start (e.g. "#room")
-            buffer_append_str(&r->chunk.tag, line + 1);
-            buffer_trim(&r->chunk.tag);
-            r->chunk.type = FILE_CHUNK_SECTION_START;
-            return;
+            buffer_append_str(&r->chunk.tag, rest);
+            buffer_clear(&r->chunk.value);
         }
+
+        buffer_trim(&r->chunk.tag);
+        buffer_trim(&r->chunk.value);
+
+        if (strcmp(r->chunk.tag.data, "end") == 0) {
+            // Move the actual section name into tag
+            buffer_clear(&r->chunk.tag);
+            buffer_append_str(&r->chunk.tag, r->chunk.value.data);
+            buffer_trim(&r->chunk.tag);
+            buffer_clear(&r->chunk.value);
+            r->chunk.type = FILE_CHUNK_SECTION_END;
+        } else {
+            r->chunk.type = FILE_CHUNK_SECTION_START;
+        }
+
+        return;
     }
 
-    // FIELD
+    // FIELD like "name: foo~"
     const char *sep = strchr(line, ':');
     CHECK_MSG(sep, "Expected colon in field line at line %d", r->line_number);
 
@@ -155,6 +144,7 @@ static void parse_chunk(FileChunkReader *r) {
 
     r->chunk.type = FILE_CHUNK_FIELD;
 }
+
 
 bool file_chunk_skip_section(FileChunkReader *r, const char *section) {
     CHECK(r != NULL);
