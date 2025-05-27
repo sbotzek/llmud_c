@@ -84,5 +84,10 @@ char *str_parse_word(char *input, char *word) {
     }
     *out = '\0';
 
+    // Skip trailing whitespace
+    while (isspace((unsigned char)*input)) {
+        ++input;
+    }
+
     return *input ? input : NULL;
 }
