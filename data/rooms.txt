@@ -8,11 +8,11 @@ name: The Starting Room~
 id: 2~
 name: A Dusty Hallway~
 #exit south 1~
-#exit north 3 false stone door~
+#exit north 3 true stone door~
 #end room
 
 #room
 id: 3~
 name: The Treasure Vault~
-#exit south 2 false stone door~
+#exit south 2 true stone door~
 #end room
