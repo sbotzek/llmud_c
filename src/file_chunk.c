@@ -69,7 +69,7 @@ bool file_chunk_read(FileChunkReader *r) {
         trim_trailing_newlines(&r->raw);
         parse_chunk(r);
 
-        log_info("Got chunk tag %s, data %s", r->chunk.tag.data, r->chunk.value.data);
+        log_debug("Got chunk tag %s, data %s", r->chunk.tag.data, r->chunk.value.data);
         return true;
     }
 
