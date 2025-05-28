@@ -78,16 +78,16 @@ static Actor *read_one_room(FileChunkReader *r) {
             char *args = chunk->value.data;
             char word[1024];
 
-            args = str_parse_word(args, word);
+            args = str_parse_word(args, word, sizeof(word));
             exit->dir = string_to_direction(word);
 
             if (args) {
-                args = str_parse_word(args, word);
+                args = str_parse_word(args, word, sizeof(word));
                 exit->to_room = (ActorID)atoi(word);
             }
 
             if (args) {
-                args = str_parse_word(args, word);
+                args = str_parse_word(args, word, sizeof(word));
                 exit->closed = strcmp(word, "true") == 0;
             }
 

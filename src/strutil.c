@@ -61,9 +61,8 @@ void str_capitalize(char *s) {
     }
 }
 
-char *str_parse_word(char *input, char *word) {
-    if (!input) {
-        word[0] = '\0';
+char *str_parse_word(char *input, char *word, size_t n) {
+    if (!input || !word || n == 0) {
         return NULL;
     }
 
@@ -77,14 +76,21 @@ char *str_parse_word(char *input, char *word) {
         return NULL;
     }
 
-    // Copy word until next whitespace or null terminator
+    // Copy characters up to n - 1, but continue advancing input regardless
     char *out = word;
+    size_t copied = 0;
+
     while (*input && !isspace((unsigned char)*input)) {
-        *out++ = *input++;
+        if (copied < n - 1) {
+            *out++ = *input;
+            ++copied;
+        }
+        ++input;
     }
+
     *out = '\0';
 
-    // Skip trailing whitespace
+    // Skip whitespace after the word
     while (isspace((unsigned char)*input)) {
         ++input;
     }

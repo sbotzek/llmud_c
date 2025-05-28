@@ -166,7 +166,7 @@ static void handle_menu_input(GameRules *rules, World *world, Player *player, co
     CHECK(player != NULL);
 
     char cmd[PLAYER_INPUT_SIZE];
-    str_parse_word((char *)line, cmd);
+    str_parse_word((char *)line, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "create") == 0) {
         player_state_enter_account_create(rules, world, player);
@@ -306,8 +306,8 @@ static void handle_account_menu_input(GameRules *rules,
     // parse the command and optional argument
     char cmd[PLAYER_INPUT_SIZE];
     char arg[PLAYER_INPUT_SIZE];
-    char *rest = str_parse_word((char *)line, cmd);
-    rest = str_parse_word(rest, arg);
+    char *rest = str_parse_word((char *)line, cmd, sizeof(cmd));
+    rest = str_parse_word(rest, arg, sizeof(arg));
 
     if (strcmp(cmd, "quit") == 0) {
         if (player->actor) {
@@ -392,7 +392,7 @@ static void handle_playing_input(GameRules *rules, World *world, Player *player,
     CHECK(player != NULL);
 
     char cmd[PLAYER_INPUT_SIZE];
-    char *rest = str_parse_word((char *)line, cmd);
+    char *rest = str_parse_word((char *)line, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "quit") == 0) {
         cmd_quit(rules, world, player, rest);
