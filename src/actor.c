@@ -87,13 +87,8 @@ void actor_add_contents(Actor *location, Actor *contents) {
     CHECK(contents != NULL);
     CHECK(contents->location_id == INVALID_ACTOR_ID);
 
-    ActorNode *node = calloc(1, sizeof(ActorNode));
-    CHECK_MSG(node != NULL, "actor_add_contents: calloc ActorNode failed");
-
-    node->actor = contents;
-    node->next = location->contents;
-    location->contents = node;
-
+    contents->next_contents = location->contents;
+    location->contents = contents;
     contents->location_id = location->id;
 }
 
@@ -102,13 +97,10 @@ void actor_remove_contents(Actor *location, Actor *contents) {
     CHECK(contents != NULL);
     CHECK(contents->location_id == location->id);
 
-    ActorNode **pp = &location->contents;
+    Actor **pp = &location->contents;
     while (*pp) {
-        ActorNode *node = *pp;
-        if (node->actor == contents) {
-            *pp = node->next;
-            node->actor = NULL;
-            free(node);
+        if (*pp == contents) {
+            *pp = (*pp)->next_contents;
             contents->location_id = INVALID_ACTOR_ID;
         }
     }
@@ -126,20 +118,6 @@ void actor_move_contents(Actor *location, Actor *contents, Actor *new_location) 
         return;
     }
 
-    ActorNode **pp = &location->contents;
-    ActorNode  *node = NULL;
-    while (*pp) {
-        if ((*pp)->actor == contents) {
-            node = *pp;
-            *pp  = node->next;
-            break;
-        }
-        pp = &(*pp)->next;
-    }
-    CHECK_MSG(node != NULL, "actor_move_contents: contents not found in source");
-
-    node->next               = new_location->contents;
-    new_location->contents   = node;
-
-    contents->location_id    = new_location->id;
+    actor_remove_contents(location, contents);
+    actor_add_contents(new_location, contents);
 }

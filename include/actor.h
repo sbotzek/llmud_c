@@ -12,22 +12,21 @@ typedef uint32_t ActorID;
 
 typedef struct Player Player;
 typedef struct Room Room;
+typedef struct Actor Actor;
 
 typedef struct Actor {
     ActorID id;
     bool alive;
     ActorID location_id;
-    struct ActorNode *contents;
+    Actor *contents;
     Appearance appearance;
 
     Player *player;
     Room *room;
-} Actor;
 
-typedef struct ActorNode {
-    Actor *actor;
-    struct ActorNode *next;
-} ActorNode;
+    Actor *next_world;
+    Actor *next_contents;
+} Actor;
 
 void actor_init(Actor *actor);
 void actor_init_persistent(Actor *actor, ActorID id);

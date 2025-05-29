@@ -22,18 +22,14 @@ void world_add_actor(World *world, Actor *actor) {
         CHECK(location != NULL);
     }
 
-    ActorNode *node = calloc(1, sizeof(ActorNode));
-    CHECK_MSG(node != NULL, "world_add_actor: calloc ActorNode failed");
-
     if (location != NULL) {
         actor->location_id = INVALID_ACTOR_ID;
         actor_add_contents(location, actor);
     }
 
     actor->alive = true;
-    node->actor = actor;
-    node->next = world->actors;
-    world->actors = node;
+    actor->next_world = world->actors;
+    world->actors = actor;
 }
 
 bool world_remove_actor(World *world, Actor *actor) {
@@ -44,13 +40,10 @@ bool world_remove_actor(World *world, Actor *actor) {
 
     actor->alive = false;
 
-    ActorNode **pp = &world->actors;
+    Actor **pp = &world->actors;
     while (*pp) {
-        ActorNode *node = *pp;
-        if (node->actor == actor) {
-            *pp = node->next;
-            node->actor = NULL;
-            free(node);
+        if (*pp == actor) {
+            *pp = (*pp)->next_world;
             return true;
         }
     }
@@ -60,8 +53,8 @@ bool world_remove_actor(World *world, Actor *actor) {
 
 Actor *world_find_actor(World *world, ActorID id) {
     CHECK(world != NULL);
-    for (ActorNode *node = world->actors; node; node = node->next) {
-        if (node->actor->id == id) return node->actor;
+    for (Actor *actor = world->actors; actor; actor = actor->next_world) {
+        if (actor->id == id) return actor;
     }
     return NULL;
 }

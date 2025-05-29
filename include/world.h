@@ -10,7 +10,7 @@
 typedef struct Player Player;
 
 typedef struct World {
-    ActorNode *actors;
+    Actor *actors;
 } World;
 
 
