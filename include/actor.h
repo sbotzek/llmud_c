@@ -16,7 +16,7 @@ typedef struct Actor Actor;
 
 typedef struct Actor {
     ActorID id;
-    bool alive;
+    bool dead;
     ActorID location_id;
     Actor *contents;
     Appearance appearance;

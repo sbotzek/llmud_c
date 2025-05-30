@@ -30,7 +30,7 @@ static void actor_init_internal(Actor *actor) {
     *actor = (Actor){
         .id = INVALID_ACTOR_ID,
         .location_id = INVALID_ACTOR_ID,
-        .alive = false
+        .dead = true
     };
     appearance_init(&actor->appearance);
 

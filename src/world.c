@@ -27,7 +27,7 @@ void world_add_actor(World *world, Actor *actor) {
         actor_add_contents(location, actor);
     }
 
-    actor->alive = true;
+    actor->dead = false;
     actor->next_world = world->actors;
     world->actors = actor;
 }
@@ -35,10 +35,10 @@ void world_add_actor(World *world, Actor *actor) {
 bool world_remove_actor(World *world, Actor *actor) {
     CHECK(world != NULL);
     CHECK(actor != NULL);
-    CHECK_MSG(actor->alive,
+    CHECK_MSG(!actor->dead,
               "attempted to remove a dead actor (id=%u)", actor->id);
 
-    actor->alive = false;
+    actor->dead = true;
 
     Actor **pp = &world->actors;
     while (*pp) {
