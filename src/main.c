@@ -2,8 +2,8 @@
 #include "server.h"
 #include "world.h"
 #include "config.h"
-#include "room.h"
 #include "game_rules.h"
+#include "game_inits.h"
 #include "game_process.h"
 #include "game_processes.h"
 

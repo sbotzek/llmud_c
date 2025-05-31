@@ -29,9 +29,6 @@ typedef struct Room {
     Exit *exits[DIR_COUNT];   // exits indexed by direction
 } Room;
 
-
-void room_load_all(World *world);
-
 const char *direction_to_string(Direction dir);
 Direction    string_to_direction(const char *s);
 
