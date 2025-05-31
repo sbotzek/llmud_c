@@ -8,8 +8,6 @@
 #define PLAYER_NAME_SIZE 16
 #define PLAYER_INPUT_SIZE 1024
 
-typedef struct GameRules   GameRules;
-typedef struct World       World;
 typedef struct TelnetConn  TelnetConn;
 typedef struct Player      Player;
 typedef struct Actor       Actor;
@@ -26,8 +24,6 @@ typedef enum {
 } PlayerState;
 
 typedef void (*InputHandler)(
-    GameRules *game_rules,
-    World     *world,
     Player    *player,
     const char *line
 );
@@ -48,14 +44,14 @@ Player *player_new(void);
 void    player_free(Player *player);
 
 // — Input
-void    player_handle_input(Player *player, GameRules *rules, World *world, const char *line);
+void    player_handle_input(Player *player, const char *line);
 
 // — Output
 void    player_send(Player *player, const char *text);
 void    player_sendf(Player *player, const char *fmt, ...);
 
-void player_create_character(Player *player, const char *name, World *world);
-void player_save_character(Actor *actor, World *world);
+void player_create_character(Player *player, const char *name);
+void player_save_character(Actor *actor);
 Actor *player_load_character(const char *name);
 
 char* player_name(Player *player);

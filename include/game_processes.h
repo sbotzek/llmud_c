@@ -2,13 +2,12 @@
 #ifndef GAME_PROCESSES_H
 #define GAME_PROCESSES_H
 
-#include "game_process.h"
-
-void telnet_listen_tick(GameRules *rules, World *world);
-void telnet_read_tick(GameRules *rules, World *world);
-void telnet_process_input_tick(GameRules *rules, World *world);
-void telnet_flush_tick(GameRules *rules, World *world);
-void telnet_gc_tick(GameRules *rules, World *world);
-void buffer_gc_scratch_tick(GameRules *rules, World *world);
+void buffer_gc_scratch(void);
+void telnet_listen_tick(void);
+void telnet_read_tick(void);
+void telnet_process_input_tick(void);
+void telnet_flush_tick(void);
+void telnet_gc_tick(void);
+void buffer_gc_scratch_tick(void);
 
 #endif // GAME_PROCESSES_H

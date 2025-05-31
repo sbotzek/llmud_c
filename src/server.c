@@ -40,7 +40,7 @@ static void sleep_until_next_tick(struct timespec *next_tick) {
     }
 }
 
-bool server_run(GameRules *rules, World *world, const GameProcess *processes, size_t process_count) {
+bool server_run(const GameProcess *processes, size_t process_count) {
     unsigned int tick = 0;
     struct timespec next_tick;
     clock_gettime(CLOCK_MONOTONIC, &next_tick);
@@ -50,7 +50,7 @@ bool server_run(GameRules *rules, World *world, const GameProcess *processes, si
         for (size_t i = 0; i < process_count; ++i) {
             if (tick % processes[i].frequency == 0) {
                 log_trace("server_run: tick [%d], process [%s]", tick, processes[i].name);
-                processes[i].tick(rules, world);
+                processes[i].tick();
             }
         }
 

@@ -4,8 +4,6 @@
 
 #include "actor.h"
 
-typedef struct World World;
-
 typedef enum {
     DIR_NORTH,
     DIR_SOUTH,

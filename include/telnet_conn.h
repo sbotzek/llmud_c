@@ -22,7 +22,6 @@ typedef enum {
     TELNET_STATE_SB_IAC
 } TelnetState;
 
-typedef struct World      World;
 typedef struct Player     Player;
 typedef struct TelnetConn TelnetConn;
 

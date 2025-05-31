@@ -4,20 +4,12 @@
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "room.h"
 #include "actor.h"
 
-typedef struct Player Player;
+extern Actor *world_actors;
 
-typedef struct World {
-    Actor *actors;
-} World;
-
-
-World *world_new();
-
-void world_add_actor(World *world, Actor *actor);
-bool world_remove_actor(World *world, Actor *actor);
-Actor *world_find_actor(World *world, ActorID id);
+void world_add_actor(Actor *actor);
+bool world_remove_actor(Actor *actor);
+Actor *world_find_actor(ActorID id);
 
 #endif // WORLD_H

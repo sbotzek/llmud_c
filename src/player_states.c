@@ -4,10 +4,10 @@
 #include "player.h"
 #include "telnet_conn.h"
 #include "world.h"
-#include "game_rules.h"
 #include "account.h"
 #include "strutil.h"
 #include "macros.h"
+#include "room.h"
 #include "log.h"
 
 #include <stdlib.h>
@@ -40,32 +40,30 @@ typedef struct {
 } AccountLoginContext;
 
 // Static helper declarations
-static bool account_username_exists(World *world, const char *username);
+static bool account_username_exists(const char *username);
 static void list_account_characters(Player *player);
 
 // Input handler declarations
-static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line);
-static void handle_account_create_input(GameRules *rules, World *world, Player *player, const char *line);
-static void handle_account_login_input(GameRules *rules, World *world, Player *player, const char *line);
-static void handle_account_menu_input(GameRules *rules, World *world, Player *player, const char *line);
-static void handle_playing_input(GameRules *rules, World *world, Player *player, const char *line);
-static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line);
+static void handle_menu_input(Player *player, const char *line);
+static void handle_account_create_input(Player *player, const char *line);
+static void handle_account_login_input(Player *player, const char *line);
+static void handle_account_menu_input(Player *player, const char *line);
+static void handle_playing_input(Player *player, const char *line);
+static void handle_character_creation_input(Player *player, const char *line);
 
 // playing state command handlers
-static void cmd_quit(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_look(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_move(GameRules *rules, World *world, Player *player, Direction dir);
-static void cmd_north(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_south(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_east(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_west(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_up(GameRules *rules, World *world, Player *player, const char *args);
-static void cmd_down(GameRules *rules, World *world, Player *player, const char *args);
+static void cmd_quit(Player *player, const char *args);
+static void cmd_look(Player *player, const char *args);
+static void cmd_move(Player *player, Direction dir);
+static void cmd_north(Player *player, const char *args);
+static void cmd_south(Player *player, const char *args);
+static void cmd_east(Player *player, const char *args);
+static void cmd_west(Player *player, const char *args);
+static void cmd_up(Player *player, const char *args);
+static void cmd_down(Player *player, const char *args);
 
 // State entry functions
-void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
-    UNUSED(rules);
-    UNUSED(world);
+void player_state_enter_menu(Player *player) {
     player->state = PLAYER_STATE_MENU;
     player->input_handler = handle_menu_input;
     player_send(player,
@@ -75,9 +73,7 @@ void player_state_enter_menu(GameRules *rules, World *world, Player *player) {
     );
 }
 
-void player_state_enter_account_create(GameRules *rules, World *world, Player *player) {
-    UNUSED(rules);
-    UNUSED(world);
+void player_state_enter_account_create(Player *player) {
     player->state = PLAYER_STATE_ACCOUNT_CREATE;
     player->input_handler = handle_account_create_input;
     AccountCreateContext *ctx = malloc(sizeof *ctx);
@@ -88,9 +84,7 @@ void player_state_enter_account_create(GameRules *rules, World *world, Player *p
     player_send(player, "Enter username: ");
 }
 
-void player_state_enter_account_login(GameRules *rules, World *world, Player *player) {
-    UNUSED(rules);
-    UNUSED(world);
+void player_state_enter_account_login(Player *player) {
     player->state = PLAYER_STATE_ACCOUNT_LOGIN;
     player->input_handler = handle_account_login_input;
     AccountLoginContext *ctx = malloc(sizeof *ctx);
@@ -101,9 +95,7 @@ void player_state_enter_account_login(GameRules *rules, World *world, Player *pl
     player_send(player, "Enter username: ");
 }
 
-void player_state_enter_account_menu(GameRules *rules, World *world, Player *player) {
-    UNUSED(rules);
-    UNUSED(world);
+void player_state_enter_account_menu(Player *player) {
     player->state = PLAYER_STATE_ACCOUNT_MENU;
     player->input_handler = handle_account_menu_input;
     player_send(player,
@@ -112,21 +104,20 @@ void player_state_enter_account_menu(GameRules *rules, World *world, Player *pla
     );
 }
 
-void player_state_enter_playing(GameRules *rules, World *world, Player *player, const char *name) {
-    UNUSED(rules);
+void player_state_enter_playing(Player *player, const char *name) {
     CHECK(account_has_character(player->account, name));
 
     Actor *actor = player_load_character(name);
     if (actor == NULL) {
         player_send(player, "Error loading character.\n");
-        player_state_enter_account_menu(rules, world, player);
+        player_state_enter_account_menu(player);
         return;
     }
 
-    Actor *location = world_find_actor(world, actor->location_id);
+    Actor *location = world_find_actor(actor->location_id);
     if (location == NULL) {
         player_sendf(player, "Error loading character: could not find location %d!\n", actor->location_id);
-        player_state_enter_account_menu(rules, world, player);
+        player_state_enter_account_menu(player);
         return;
     }
 
@@ -134,25 +125,22 @@ void player_state_enter_playing(GameRules *rules, World *world, Player *player, 
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
 
-    world_add_actor(world, actor);
+    world_add_actor(actor);
 
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
-    cmd_look(rules, world, player, NULL);
+    cmd_look(player, NULL);
 }
 
-void player_state_enter_character_creation(GameRules *rules, World *world, Player *player) {
-    UNUSED(rules);
-    UNUSED(world);
+void player_state_enter_character_creation(Player *player) {
     player->state = PLAYER_STATE_CHARACTER_CREATION;
     player->input_handler = handle_character_creation_input;
     player_send(player, "Enter character name (a-z only): ");
 }
 
 // Helper to check existing username
-static bool account_username_exists(World *world, const char *username) {
-    UNUSED(world);
+static bool account_username_exists(const char *username) {
     Account *acct = account_load(username);
     if (!acct) return false;
     account_free(acct);
@@ -160,33 +148,29 @@ static bool account_username_exists(World *world, const char *username) {
 }
 
 // Input handlers
-static void handle_menu_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_menu_input(Player *player, const char *line) {
     CHECK(player != NULL);
 
     char cmd[PLAYER_INPUT_SIZE];
     str_parse_word((char *)line, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "create") == 0) {
-        player_state_enter_account_create(rules, world, player);
+        player_state_enter_account_create(player);
     } else if (strcmp(cmd, "login") == 0) {
-        player_state_enter_account_login(rules, world, player);
+        player_state_enter_account_login(player);
     } else {
         player_send(player, "Unknown command. Type 'create' or 'login'.\n");
     }
 }
 
-static void handle_account_create_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_account_create_input(Player *player, const char *line) {
     CHECK(player != NULL);
     AccountCreateContext *ctx = player->state_data;
     switch (ctx->step) {
     case ACC_CREATE_USERNAME:
         if (!account_validate_username(line)) {
             player_send(player, "Invalid username. Enter username: ");
-        } else if (account_username_exists(world, line)) {
+        } else if (account_username_exists(line)) {
             player_send(player, "Username already in use. Enter username: ");
         } else {
             strncpy(ctx->username, line, ACCOUNT_USERNAME_SIZE);
@@ -215,7 +199,7 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             ctx->password = NULL;
             ctx->step = ACC_CREATE_PASSWORD;
             player_send(player, "Passwords do not match. Enter password: ");
-        } else if (account_username_exists(world, ctx->username)) {
+        } else if (account_username_exists(ctx->username)) {
             player_send(player, "Username already in use. Enter username: ");
             ctx->step = ACC_CREATE_USERNAME;
             free(ctx->password);
@@ -229,15 +213,13 @@ static void handle_account_create_input(GameRules *rules, World *world, Player *
             player->account = acct;
             log_info("account created: %s as %s", player->conn->ip_string, player->account->username);
             player_send(player, "Account created.\n");
-            player_state_enter_account_menu(rules, world, player);
+            player_state_enter_account_menu(player);
         }
         break;
     }
 }
 
-static void handle_account_login_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_account_login_input(Player *player, const char *line) {
     CHECK(player != NULL);
     AccountLoginContext *ctx = player->state_data;
     switch (ctx->step) {
@@ -278,14 +260,14 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
                 player_free(player);
                 log_info("account reconnect: %s as %s", existing->conn->ip_string, existing->account->username);
                 player_send(existing, "\nPrevious session resumed.\n");
-                player_state_enter_account_menu(rules, world, existing);
+                player_state_enter_account_menu(existing);
             } else {
                 player->state_data = NULL;
                 player->account    = ctx->account;
                 free(ctx);
                 log_info("account login: %s as %s", player->conn->ip_string, player->account->username);
                 player_send(player, "Login successful.\n");
-                player_state_enter_account_menu(rules, world, player);
+                player_state_enter_account_menu(player);
             }
         } else {
             player_send(player, "Invalid password. Enter password: ");
@@ -294,13 +276,8 @@ static void handle_account_login_input(GameRules *rules, World *world, Player *p
     }
 }
 
-static void handle_account_menu_input(GameRules *rules,
-                                      World     *world,
-                                      Player    *player,
-                                      const char *line)
+static void handle_account_menu_input(Player *player, const char *line)
 {
-    CHECK(rules  != NULL);
-    CHECK(world  != NULL);
     CHECK(player != NULL);
 
     // parse the command and optional argument
@@ -311,7 +288,7 @@ static void handle_account_menu_input(GameRules *rules,
 
     if (strcmp(cmd, "quit") == 0) {
         if (player->actor) {
-            world_remove_actor(world, player->actor);
+            world_remove_actor(player->actor);
             actor_free(player->actor);
             player->actor = NULL;
         }
@@ -326,7 +303,7 @@ static void handle_account_menu_input(GameRules *rules,
         player_free(player);
 
     } else if (strcmp(cmd, "create") == 0) {
-        player_state_enter_character_creation(rules, world, player);
+        player_state_enter_character_creation(player);
     } else if (strcmp(cmd, "play") == 0) {
         // No name given: list all characters
         if (arg[0] == '\0') {
@@ -342,7 +319,7 @@ static void handle_account_menu_input(GameRules *rules,
                 player_sendf(player, "Unknown character '%s'. Available characters:\n", arg);
                 list_account_characters(player);
             } else {
-                player_state_enter_playing(rules, world, player, arg);
+                player_state_enter_playing(player, arg);
             }
         }
 
@@ -386,50 +363,46 @@ static void list_account_characters(Player *player) {
     }
 }
 
-static void handle_playing_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_playing_input(Player *player, const char *line) {
     CHECK(player != NULL);
 
     char cmd[PLAYER_INPUT_SIZE];
     char *rest = str_parse_word((char *)line, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "quit") == 0) {
-        cmd_quit(rules, world, player, rest);
+        cmd_quit(player, rest);
     } else if (strcmp(cmd, "look") == 0) {
-        cmd_look(rules, world, player, rest);
+        cmd_look(player, rest);
     } else if (strcmp(cmd, "north") == 0) {
-        cmd_north(rules, world, player, rest);
+        cmd_north(player, rest);
     } else if (strcmp(cmd, "south") == 0) {
-        cmd_south(rules, world, player, rest);
+        cmd_south(player, rest);
     } else if (strcmp(cmd, "east") == 0) {
-        cmd_east(rules, world, player, rest);
+        cmd_east(player, rest);
     } else if (strcmp(cmd, "west") == 0) {
-        cmd_west(rules, world, player, rest);
+        cmd_west(player, rest);
     } else if (strcmp(cmd, "up") == 0) {
-        cmd_up(rules, world, player, rest);
+        cmd_up(player, rest);
     } else if (strcmp(cmd, "down") == 0) {
-        cmd_down(rules, world, player, rest);
+        cmd_down(player, rest);
     } else {
         player_sendf(player, "Unknown command '%s'.\n", cmd);
     }
 }
 
-static void cmd_quit(GameRules *rules, World *world, Player *player, const char *args) {
-    UNUSED(rules);
+static void cmd_quit(Player *player, const char *args) {
     UNUSED(args);
 
-    world_remove_actor(world, player->actor);
+    world_remove_actor(player->actor);
     actor_free(player->actor);
     player_send(player, "You leave the game world.\n");
-    player_state_enter_account_menu(rules, world, player);
+    player_state_enter_account_menu(player);
 }
 
-static void cmd_look(GameRules *rules, World *world, Player *player, const char *args) {
-    UNUSED(rules);
+static void cmd_look(Player *player, const char *args) {
     UNUSED(args);
 
-    Actor *location = world_find_actor(world, player->actor->location_id);
+    Actor *location = world_find_actor(player->actor->location_id);
     if (location == NULL) {
         player_send(player, "You are in nothingness.\n");
         return;
@@ -485,9 +458,9 @@ static void cmd_look(GameRules *rules, World *world, Player *player, const char 
 
 }
 
-static void cmd_move(GameRules *rules, World *world, Player *player, Direction dir) {
+static void cmd_move(Player *player, Direction dir) {
     Actor *actor = player->actor;
-    Actor *from = world_find_actor(world, actor->location_id);
+    Actor *from = world_find_actor(actor->location_id);
 
     if (!from || !from->room) {
         player_send(player, "You can't go anywhere from here.\n");
@@ -505,7 +478,7 @@ static void cmd_move(GameRules *rules, World *world, Player *player, Direction d
         return;
     }
 
-    Actor *dest = world_find_actor(world, exit->to_room);
+    Actor *dest = world_find_actor(exit->to_room);
     if (!dest) {
         player_send(player, "You can't go that way.\n");
         return;
@@ -513,38 +486,36 @@ static void cmd_move(GameRules *rules, World *world, Player *player, Direction d
 
     actor->location_id = dest->id;
     player_sendf(player, "You go %s.\n", direction_to_string(dir));
-    cmd_look(rules, world, player, NULL);
+    cmd_look(player, NULL);
 }
 
-static void cmd_north(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_north(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_NORTH);
+    cmd_move(player, DIR_NORTH);
 }
-static void cmd_south(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_south(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_SOUTH);
+    cmd_move(player, DIR_SOUTH);
 }
-static void cmd_east(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_east(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_EAST);
+    cmd_move(player, DIR_EAST);
 }
-static void cmd_west(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_west(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_WEST);
+    cmd_move(player, DIR_WEST);
 }
-static void cmd_up(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_up(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_UP);
+    cmd_move(player, DIR_UP);
 }
-static void cmd_down(GameRules *rules, World *world, Player *player, const char *args) {
+static void cmd_down(Player *player, const char *args) {
     UNUSED(args);
-    cmd_move(rules, world, player, DIR_DOWN);
+    cmd_move(player, DIR_DOWN);
 }
 
 
-static void handle_character_creation_input(GameRules *rules, World *world, Player *player, const char *line) {
-    CHECK(rules != NULL);
-    CHECK(world != NULL);
+static void handle_character_creation_input(Player *player, const char *line) {
     CHECK(player != NULL);
     CHECK(player->account != NULL);
 
@@ -563,7 +534,7 @@ static void handle_character_creation_input(GameRules *rules, World *world, Play
         return;
     }
 
-    player_create_character(player, line, world);
+    player_create_character(player, line);
     player_sendf(player, "Character '%s' created.\n", line);
-    player_state_enter_account_menu(rules, world, player);
+    player_state_enter_account_menu(player);
 }

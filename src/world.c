@@ -6,19 +6,14 @@
 
 #include <stdlib.h>
 
-World *world_new() {
-    World *world = calloc(1, sizeof(World));
-    CHECK_MSG(world != NULL, "world_new: calloc World failed");
-    return world;
-}
+Actor *world_actors = NULL;
 
-void world_add_actor(World *world, Actor *actor) {
-    CHECK(world != NULL);
+void world_add_actor(Actor *actor) {
     CHECK(actor != NULL);
 
     Actor *location = NULL;
     if (actor->location_id != INVALID_ACTOR_ID) {
-        location = world_find_actor(world, actor->location_id);
+        location = world_find_actor(actor->location_id);
         CHECK(location != NULL);
     }
 
@@ -28,19 +23,18 @@ void world_add_actor(World *world, Actor *actor) {
     }
 
     actor->dead = false;
-    actor->next_world = world->actors;
-    world->actors = actor;
+    actor->next_world = world_actors;
+    world_actors = actor;
 }
 
-bool world_remove_actor(World *world, Actor *actor) {
-    CHECK(world != NULL);
+bool world_remove_actor(Actor *actor) {
     CHECK(actor != NULL);
     CHECK_MSG(!actor->dead,
               "attempted to remove a dead actor (id=%u)", actor->id);
 
     actor->dead = true;
 
-    Actor **pp = &world->actors;
+    Actor **pp = &world_actors;
     while (*pp) {
         if (*pp == actor) {
             *pp = (*pp)->next_world;
@@ -51,9 +45,8 @@ bool world_remove_actor(World *world, Actor *actor) {
     return false;
 }
 
-Actor *world_find_actor(World *world, ActorID id) {
-    CHECK(world != NULL);
-    for (Actor *actor = world->actors; actor; actor = actor->next_world) {
+Actor *world_find_actor(ActorID id) {
+    for (Actor *actor = world_actors; actor; actor = actor->next_world) {
         if (actor->id == id) return actor;
     }
     return NULL;

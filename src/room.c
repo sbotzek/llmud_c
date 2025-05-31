@@ -20,8 +20,7 @@
 
 static Actor *read_one_room(FileChunkReader *r);
 
-void room_load_all(World *world) {
-    CHECK(world != NULL);
+void room_load_all(void) {
     ensure_directory(DATA_DIR);
 
     FILE *fp = fopen(ROOMS_PATH, "r");
@@ -38,7 +37,7 @@ void room_load_all(World *world) {
             strcmp(r.chunk.tag.data, "room") == 0) {
             Actor *actor = read_one_room(&r);
             if (actor) {
-                world_add_actor(world, actor);
+                world_add_actor(actor);
                 log_info("Loaded room [%u]: %s", actor->id, actor->appearance.name);
             }
         } else {

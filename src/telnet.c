@@ -6,7 +6,6 @@
 #include "player_states.h"
 #include "world.h"
 #include "log.h"
-#include "game_rules.h"
 #include "macros.h"
 #include "config.h"
 
@@ -26,9 +25,8 @@ static TelnetConn *connections[MAX_CONNECTIONS] = {0};
 static void accept_new_connections(void);
 static int make_socket_nonblocking(int fd);
 
-void telnet_listen_tick(GameRules *rules, World *world) {
+void telnet_listen_tick(GameRules *rules) {
     UNUSED(rules);
-    UNUSED(world);
     if (listener_fd < 0) {
         listener_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (listener_fd < 0) {
@@ -99,7 +97,7 @@ static void accept_new_connections() {
         connections[slot]->player->conn = connections[slot];
         player_register(connections[slot]->player);
 
-        player_state_enter_menu(NULL, NULL, connections[slot]->player);
+        player_state_enter_menu(connections[slot]->player);
         log_info("New connection: %s", connections[slot]->ip_string);
     }
 }
@@ -109,10 +107,7 @@ static int make_socket_nonblocking(int fd) {
     return (flags < 0) ? -1 : fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-void telnet_read_tick(GameRules *rules, World *world) {
-    UNUSED(rules);
-    UNUSED(world);
-
+void telnet_read_tick() {
     struct pollfd fds[MAX_CONNECTIONS];
     int nfds = 0;
 
@@ -148,7 +143,7 @@ void telnet_read_tick(GameRules *rules, World *world) {
     }
 }
 
-void telnet_process_input_tick(GameRules *rules, World *world) {
+void telnet_process_input_tick() {
     char line[PLAYER_INPUT_SIZE];
 
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
@@ -161,14 +156,11 @@ void telnet_process_input_tick(GameRules *rules, World *world) {
         }
 
         log_debug("telnet_process_input_tick: ip [%s]: found input", conn->ip_string);
-        player_handle_input(conn->player, rules, world, line);
+        player_handle_input(conn->player, line);
     }
 }
 
-void telnet_flush_tick(GameRules *rules, World *world) {
-    UNUSED(rules);
-    UNUSED(world);
-
+void telnet_flush_tick() {
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];
         if (!conn || !conn->connected) continue;
@@ -182,10 +174,7 @@ void telnet_flush_tick(GameRules *rules, World *world) {
     }
 }
 
-void telnet_gc_tick(GameRules *rules, World *world) {
-    UNUSED(rules);
-    UNUSED(world);
-
+void telnet_gc_tick() {
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         TelnetConn *conn = connections[i];
 

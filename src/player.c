@@ -52,7 +52,7 @@ void player_sendf(Player *player, const char *fmt, ...) {
     va_end(args);
 }
 
-void player_handle_input(Player *player, GameRules *rules, World *world, const char *line) {
+void player_handle_input(Player *player, const char *line) {
     CHECK(player != NULL);
 
     // For testing, makes it easier to cleanly disconnect a connection
@@ -60,7 +60,7 @@ void player_handle_input(Player *player, GameRules *rules, World *world, const c
         log_info("account killconn: %s as %s", player->conn->ip_string,
             (player->account == NULL ? NULL : player->account->username));
         if (player->actor) {
-            world_remove_actor(world, player->actor);
+            world_remove_actor(player->actor);
             actor_free(player->actor);
             player->actor = NULL;
         }
@@ -68,7 +68,7 @@ void player_handle_input(Player *player, GameRules *rules, World *world, const c
         player_free(player);
         return;
     }
-    player->input_handler(rules, world, player, line);
+    player->input_handler(player, line);
 }
 
 char* player_name(Player *player) {
@@ -110,7 +110,7 @@ Player *player_find_registered(const char *username) {
     return NULL;
 }
 
-void player_create_character(Player *player, const char *name, World *world) {
+void player_create_character(Player *player, const char *name) {
     CHECK(player != NULL);
     CHECK(player->account != NULL);
     CHECK(name != NULL);
@@ -121,20 +121,20 @@ void player_create_character(Player *player, const char *name, World *world) {
     actor.appearance.name = str_copy(name);
     str_capitalize(actor.appearance.name);
 
-    player_save_character(&actor, world);
+    player_save_character(&actor);
     actor_cleanup(&actor);
 
     account_add_character(player->account, name);
     account_save(player->account);
 }
 
-void player_save_character(Actor *actor, World *world) {
+void player_save_character(Actor *actor) {
     CHECK(actor != NULL);
 
     // Need to find a persistent actor to save this under
     ActorID location_id = actor->location_id;
     while (location_id > MAX_PERSISTENT_ACTOR_ID) {
-        Actor *location = world_find_actor(world, location_id);
+        Actor *location = world_find_actor(location_id);
         if (location) {
             location_id = location->location_id;
         } else {

@@ -23,8 +23,6 @@ void buffer_free(Buffer *buf);
 
 // Allocates a new scratch buffer (auto-freed by buffer_gc_scratch)
 Buffer *buffer_new_scratch(size_t initial_capacity);
-// Frees all scratch buffers
-void buffer_gc_scratch(void);
 // Removes the buffer from scratch GC management.
 // Crashes if buffer is not a scratch buffer.
 void buffer_unscratch(Buffer *buf);

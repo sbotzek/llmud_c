@@ -2,10 +2,7 @@
 #ifndef GAME_PROCESS_H
 #define GAME_PROCESS_H
 
-typedef struct GameRules GameRules;
-typedef struct World World;
-
-typedef void (*GameProcessFn)(GameRules *rules, World *world);
+typedef void (*GameProcessFn)();
 
 typedef struct GameProcess {
     const char *name;
