@@ -40,6 +40,7 @@ bool world_remove_actor(Actor *actor) {
             *pp = (*pp)->next_world;
             return true;
         }
+        pp = &(*pp)->next_world;
     }
 
     return false;

@@ -103,6 +103,7 @@ void actor_remove_contents(Actor *location, Actor *contents) {
             *pp = (*pp)->next_contents;
             contents->location_id = INVALID_ACTOR_ID;
         }
+        pp = &(*pp)->next_contents;
     }
 }
 
@@ -111,8 +112,7 @@ void actor_move_contents(Actor *location, Actor *contents, Actor *new_location) 
     CHECK(contents      != NULL);
     CHECK(new_location  != NULL);
     CHECK(contents->location_id == location->id);
-    CHECK(new_location->location_id != INVALID_ACTOR_ID);
-    CHECK(new_location->location_id != location->id);
+    CHECK(new_location->id != INVALID_ACTOR_ID);
 
     if (location->id == new_location->id) {
         return;
