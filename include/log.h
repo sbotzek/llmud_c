@@ -20,14 +20,14 @@
 
 // Internal function declaration
 void log_internal(int level, const char *level_str,
-                  const char *file, int line,
+                  const char *file, const char *func, int line,
                   const char *fmt, ...);
 
 // Filtered macro dispatch
 #define LOG(level, level_str, ...) \
     do { \
         if ((level) <= LOG_LEVEL) \
-            log_internal((level), (level_str), __FILE__, __LINE__, __VA_ARGS__); \
+            log_internal((level), (level_str), __FILE__, __func__, __LINE__, __VA_ARGS__); \
     } while (0)
 
 // Public log macros
