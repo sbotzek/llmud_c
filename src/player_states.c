@@ -9,6 +9,7 @@
 #include "macros.h"
 #include "room.h"
 #include "log.h"
+#include "movement.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -54,13 +55,6 @@ static void handle_character_creation_input(Player *player, const char *line);
 // playing state command handlers
 static void cmd_quit(Player *player, const char *args);
 static void cmd_look(Player *player, const char *args);
-static void cmd_move(Player *player, Direction dir);
-static void cmd_north(Player *player, const char *args);
-static void cmd_south(Player *player, const char *args);
-static void cmd_east(Player *player, const char *args);
-static void cmd_west(Player *player, const char *args);
-static void cmd_up(Player *player, const char *args);
-static void cmd_down(Player *player, const char *args);
 
 // State entry functions
 void player_state_enter_menu(Player *player) {
@@ -365,6 +359,9 @@ static void list_account_characters(Player *player) {
 
 static void handle_playing_input(Player *player, const char *line) {
     CHECK(player != NULL);
+    CHECK(player->actor != NULL);
+
+    Actor *actor = player->actor;
 
     char cmd[PLAYER_INPUT_SIZE];
     char *rest = str_parse_word((char *)line, cmd, sizeof(cmd));
@@ -374,17 +371,17 @@ static void handle_playing_input(Player *player, const char *line) {
     } else if (strcmp(cmd, "look") == 0) {
         cmd_look(player, rest);
     } else if (strcmp(cmd, "north") == 0) {
-        cmd_north(player, rest);
+        cmd_north(actor, rest);
     } else if (strcmp(cmd, "south") == 0) {
-        cmd_south(player, rest);
+        cmd_south(actor, rest);
     } else if (strcmp(cmd, "east") == 0) {
-        cmd_east(player, rest);
+        cmd_east(actor, rest);
     } else if (strcmp(cmd, "west") == 0) {
-        cmd_west(player, rest);
+        cmd_west(actor, rest);
     } else if (strcmp(cmd, "up") == 0) {
-        cmd_up(player, rest);
+        cmd_up(actor, rest);
     } else if (strcmp(cmd, "down") == 0) {
-        cmd_down(player, rest);
+        cmd_down(actor, rest);
     } else {
         player_sendf(player, "Unknown command '%s'.\n", cmd);
     }
@@ -432,6 +429,14 @@ static void cmd_look(Player *player, const char *args) {
     // Normal room look
     player_sendf(player, "%s\n", location->appearance.name);
 
+    // Show contents
+    for (Actor *contents = location->contents; contents; contents = contents->next_contents) {
+        if (contents->dead) continue;
+        if (player->actor == contents) continue;
+
+        player_sendf(player, "You see: %s\n", contents->appearance.name);
+    }
+
     // Show exits
     if (location->room) {
         Buffer *buf = buffer_new_scratch(64);
@@ -457,63 +462,6 @@ static void cmd_look(Player *player, const char *args) {
     }
 
 }
-
-static void cmd_move(Player *player, Direction dir) {
-    Actor *actor = player->actor;
-    Actor *from = world_find_actor(actor->location_id);
-
-    if (!from || !from->room) {
-        player_send(player, "You can't go anywhere from here.\n");
-        return;
-    }
-
-    Exit *exit = from->room->exits[dir];
-    if (!exit) {
-        player_send(player, "You can't go that way.\n");
-        return;
-    }
-
-    if (exit->closed) {
-        player_sendf(player, "The %s is closed.\n", exit->keyword);
-        return;
-    }
-
-    Actor *dest = world_find_actor(exit->to_room);
-    if (!dest) {
-        player_send(player, "You can't go that way.\n");
-        return;
-    }
-
-    actor->location_id = dest->id;
-    player_sendf(player, "You go %s.\n", direction_to_string(dir));
-    cmd_look(player, NULL);
-}
-
-static void cmd_north(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_NORTH);
-}
-static void cmd_south(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_SOUTH);
-}
-static void cmd_east(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_EAST);
-}
-static void cmd_west(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_WEST);
-}
-static void cmd_up(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_UP);
-}
-static void cmd_down(Player *player, const char *args) {
-    UNUSED(args);
-    cmd_move(player, DIR_DOWN);
-}
-
 
 static void handle_character_creation_input(Player *player, const char *line) {
     CHECK(player != NULL);

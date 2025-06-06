@@ -129,7 +129,21 @@ const char *direction_to_string(Direction dir) {
         case DIR_WEST:  return "west";
         case DIR_UP:    return "up";
         case DIR_DOWN:  return "down";
-        default:        return "";
+        default:        return "!INVALID!";
+    }
+}
+
+Direction direction_reverse(Direction direction) {
+    switch (direction) {
+        case DIR_NORTH: return DIR_SOUTH;
+        case DIR_SOUTH: return DIR_NORTH;
+        case DIR_EAST:  return DIR_WEST;
+        case DIR_WEST:  return DIR_EAST;
+        case DIR_UP:    return DIR_DOWN;
+        case DIR_DOWN:  return DIR_UP;
+        default:
+            log_error("direction_reverse: invalid direction %u, returning same", direction);
+            return direction;
     }
 }
 

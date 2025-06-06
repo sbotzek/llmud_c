@@ -29,5 +29,6 @@ typedef struct Room {
 
 const char *direction_to_string(Direction dir);
 Direction    string_to_direction(const char *s);
+Direction   direction_reverse(Direction direction);
 
 #endif //ROOM_H

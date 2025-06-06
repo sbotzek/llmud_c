@@ -5,6 +5,7 @@
 #include "game_inits.h"
 #include "game_process.h"
 #include "game_processes.h"
+#include "movement.h"
 
 int main(int argc, char **argv) {
     config_init(argc, argv);

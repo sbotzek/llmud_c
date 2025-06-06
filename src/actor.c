@@ -102,6 +102,7 @@ void actor_remove_contents(Actor *location, Actor *contents) {
         if (*pp == contents) {
             *pp = (*pp)->next_contents;
             contents->location_id = INVALID_ACTOR_ID;
+            return;
         }
         pp = &(*pp)->next_contents;
     }
