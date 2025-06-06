@@ -34,10 +34,16 @@ typedef struct Act {
     Actor *actor; // not null
 } Act;
 
-// Function type used to listen to an act occurring.
-typedef bool (*ActListenerFn)(ActPhase phase, Act *act);
+typedef enum ActListenerResult {
+    ACT_LISTENER_CONTINUE, // continue normal processing
+    ACT_LISTENER_CANCEL, // stop running, consider act not performed
+    ACT_LISTENER_ACCEPT, // stop running, consider act performed
+} ActListenerResult;
 
-// Runs an act through all phases.  Returns true when it completed normally.
+// Function type used to listen to an act occurring.  Result only honored in ACT_PHASE_PERFORM.
+typedef ActListenerResult (*ActListenerFn)(ActPhase phase, Act *act);
+
+// Runs an act through all phases.  Returns true when the act was able to be performed.
 bool act_run(Act *act);
 
 // Perceives the act to the viewer.

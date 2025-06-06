@@ -14,7 +14,13 @@ static ActListenerFn *act_listener_fns[MAX_ACT];
 
 bool act_run(Act *act) {
     for (ActListenerFn *fn = act_listener_fns[act->type]; fn && *fn; fn++) {
-        if (!(*fn)(ACT_PHASE_PERFORM, act) || act->actor->dead) {
+        switch ((*fn)(ACT_PHASE_PERFORM, act)) {
+            case ACT_LISTENER_CONTINUE: break;
+            case ACT_LISTENER_CANCEL: return false;
+            case ACT_LISTENER_ACCEPT: return true;
+        }
+
+        if (act->actor->dead) {
             return false;
         }
     }
