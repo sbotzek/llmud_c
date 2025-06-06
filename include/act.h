@@ -6,29 +6,51 @@
 // All acts are declared in this enum.
 typedef enum ActType {
     ACT_NONE = 0,
-    ACT_GO_DIRECTION,
+
+    ACT_MOVE,
+
     MAX_ACT,
 } ActType;
 
 typedef enum ActPhase {
-    ACT_PHASE_PREPARE,
-    ACT_PHASE_COMMIT,
-    ACT_PHASE_PERCEIVE,
+    ACT_PHASE_PERFORM,
+    ACT_PHASE_RESOLVE,
 } ActPhase;
 
+typedef struct Act Act;
+
 // Function types used for defining an act.
-typedef bool (*ActPrepareFn)(Actor *actor, void *act);
-typedef void (*ActCommitFn)(Actor *actor, void *act);
-typedef void (*ActPerceiveFn)(Actor *viewer, Actor *actor, void *act);
+typedef bool (*ActPerformFn)(Act *act);
+typedef void (*ActPerceiveFn)(Act *act, Actor *viewer);
+
+// Should be the first member of your act-specific struct.
+typedef struct Act {
+    ActType type; // must be set
+
+    ActPerformFn perform_fn; // nullable
+    ActPerceiveFn ai_perceive_fn; // nullable
+    ActPerceiveFn player_perceive_fn; // nullable
+
+    Actor *actor; // not null
+} Act;
 
 // Function type used to listen to an act occurring.
-typedef bool (*ActListenerFn)(ActPhase phase, ActType type, Actor *actor, void *act);
+typedef bool (*ActListenerFn)(ActPhase phase, Act *act);
 
-// Executes an act through all phases.
-void act_execute(ActType type, Actor *actor, void *act);
+// Runs an act through all phases.  Returns true when it completed normally.
+bool act_run(Act *act);
 
-// Configures various handlers for an act.  All functions optional.
-void act_configure(ActType type, ActPrepareFn prepare_fn, ActCommitFn commit_fn, ActPerceiveFn player_fn, ActPerceiveFn ai_fn);
+// Perceives the act to the viewer.
+void act_perceive_to(Act *act, Actor *viewer);
+// Perceives the act to the actor's location and all actors in it.
+void act_perceive_at(Act *act);
+// Like act_perceive_at, but will exclude actors in exclude (NULL terminated array).
+void act_perceive_at_except(Act *act, Actor *exclude[]);
+// Perceives the act to the location and all actors in it.
+void act_perceive_location(Act *act, ActorID location_id);
+// Like act_perceive_location, but will exclude actors in exclude (NULL terminated array).
+void act_perceive_location_except(Act *act, ActorID location_id, Actor *exclude[]);
+
 // Register a listener for the given act type.  The function is called in each phase.
 void act_register_listener(ActType type, ActListenerFn fn);
 
