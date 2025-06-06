@@ -70,6 +70,8 @@ static bool act_move_perform(Act *act) {
     actor_move_contents(a->from, act->actor, a->to);
     act_perceive_at_except(act, (Actor*[]){act->actor, NULL});
 
+    cmd_look(act->actor, NULL);
+
     return true;
 }
 
