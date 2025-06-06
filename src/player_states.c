@@ -52,10 +52,6 @@ static void handle_account_menu_input(Player *player, const char *line);
 static void handle_playing_input(Player *player, const char *line);
 static void handle_character_creation_input(Player *player, const char *line);
 
-// playing state command handlers
-static void cmd_quit(Player *player, const char *args);
-static void cmd_look(Player *player, const char *args);
-
 // State entry functions
 void player_state_enter_menu(Player *player) {
     player->state = PLAYER_STATE_MENU;
@@ -124,7 +120,7 @@ void player_state_enter_playing(Player *player, const char *name) {
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
-    cmd_look(player, NULL);
+    cmd_look(actor, NULL);
 }
 
 void player_state_enter_character_creation(Player *player) {
@@ -367,9 +363,9 @@ static void handle_playing_input(Player *player, const char *line) {
     char *rest = str_parse_word((char *)line, cmd, sizeof(cmd));
 
     if (strcmp(cmd, "quit") == 0) {
-        cmd_quit(player, rest);
+        cmd_quit(actor, rest);
     } else if (strcmp(cmd, "look") == 0) {
-        cmd_look(player, rest);
+        cmd_look(actor, rest);
     } else if (strcmp(cmd, "north") == 0) {
         cmd_north(actor, rest);
     } else if (strcmp(cmd, "south") == 0) {
@@ -385,82 +381,6 @@ static void handle_playing_input(Player *player, const char *line) {
     } else {
         player_sendf(player, "Unknown command '%s'.\n", cmd);
     }
-}
-
-static void cmd_quit(Player *player, const char *args) {
-    UNUSED(args);
-
-    world_remove_actor(player->actor);
-    actor_free(player->actor);
-    player_send(player, "You leave the game world.\n");
-    player_state_enter_account_menu(player);
-}
-
-static void cmd_look(Player *player, const char *args) {
-    UNUSED(args);
-
-    Actor *location = world_find_actor(player->actor->location_id);
-    if (location == NULL) {
-        player_send(player, "You are in nothingness.\n");
-        return;
-    }
-
-    if (args) {
-        Direction dir = string_to_direction(args);
-        if (dir == DIR_COUNT) {
-            player_sendf(player, "You see no '%s' here.\n", args);
-            return;
-        }
-
-        Exit *exit = location->room ? location->room->exits[dir] : NULL;
-        if (!exit) {
-            player_sendf(player, "You see nothing special to the %s.\n", args);
-        } else if (exit->keyword && exit->closed) {
-            player_sendf(player, "The %s is closed.\n", exit->keyword);
-        } else if (exit->keyword && !exit->closed) {
-            player_sendf(player, "The %s is open.\n", exit->keyword);
-        } else if (exit->closed) {
-            player_sendf(player, "The way is closed.\n");
-        }
-
-        return;
-    }
-
-    // Normal room look
-    player_sendf(player, "%s\n", location->appearance.name);
-
-    // Show contents
-    for (Actor *contents = location->contents; contents; contents = contents->next_contents) {
-        if (contents->dead) continue;
-        if (player->actor == contents) continue;
-
-        player_sendf(player, "You see: %s\n", contents->appearance.name);
-    }
-
-    // Show exits
-    if (location->room) {
-        Buffer *buf = buffer_new_scratch(64);
-        buffer_append_str(buf, "Exits: ");
-        bool first = true;
-        for (int i = 0; i < DIR_COUNT; ++i) {
-            Exit *e = location->room->exits[i];
-            if (!e) continue;
-
-            if (!first) buffer_append_str(buf, " ");
-            first = false;
-
-            const char *name = direction_to_string((Direction)i);
-            if (e->closed) {
-                buffer_appendf(buf, "[%s]", name);
-            } else {
-                buffer_append_str(buf, name);
-            }
-        }
-
-        buffer_append_str(buf, "\n");
-        player_send(player, buf->data);
-    }
-
 }
 
 static void handle_character_creation_input(Player *player, const char *line) {

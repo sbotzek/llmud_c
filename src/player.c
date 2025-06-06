@@ -14,7 +14,9 @@
 #include "io.h"
 #include "log.h"
 #include "file_chunk.h"
+#include "player_states.h"
 #include "strutil.h"
+#include "room.h"
 #include "world.h"
 
 Player* player_registry;
@@ -280,4 +282,88 @@ bool player_name_exists(const char *name) {
 
     closedir(dir);
     return false;
+}
+
+void cmd_quit(Actor *actor, const char *args) {
+    UNUSED(args);
+
+    if (!actor->player) return;
+
+    Player *player = actor->player;
+
+    world_remove_actor(actor);
+    actor_free(actor);
+    player_send(player, "You leave the game world.\n");
+    player_state_enter_account_menu(player);
+}
+
+void cmd_look(Actor *actor, const char *args) {
+    UNUSED(args);
+
+    if (!actor->player) return;
+
+    Player *player = actor->player;
+
+    Actor *location = world_find_actor(actor->location_id);
+    if (location == NULL) {
+        player_send(player, "You are in nothingness.\n");
+        return;
+    }
+
+    if (args) {
+        Direction dir = string_to_direction(args);
+        if (dir == DIR_COUNT) {
+            player_sendf(player, "You see no '%s' here.\n", args);
+            return;
+        }
+
+        Exit *exit = location->room ? location->room->exits[dir] : NULL;
+        if (!exit) {
+            player_sendf(player, "You see nothing special to the %s.\n", args);
+        } else if (exit->keyword && exit->closed) {
+            player_sendf(player, "The %s is closed.\n", exit->keyword);
+        } else if (exit->keyword && !exit->closed) {
+            player_sendf(player, "The %s is open.\n", exit->keyword);
+        } else if (exit->closed) {
+            player_sendf(player, "The way is closed.\n");
+        }
+
+        return;
+    }
+
+    // Normal room look
+    player_sendf(player, "%s\n", location->appearance.name);
+
+    // Show contents
+    for (Actor *contents = location->contents; contents; contents = contents->next_contents) {
+        if (contents->dead) continue;
+        if (player->actor == contents) continue;
+
+        player_sendf(player, "You see: %s\n", contents->appearance.name);
+    }
+
+    // Show exits
+    if (location->room) {
+        Buffer *buf = buffer_new_scratch(64);
+        buffer_append_str(buf, "Exits: ");
+        bool first = true;
+        for (int i = 0; i < DIR_COUNT; ++i) {
+            Exit *e = location->room->exits[i];
+            if (!e) continue;
+
+            if (!first) buffer_append_str(buf, " ");
+            first = false;
+
+            const char *name = direction_to_string((Direction)i);
+            if (e->closed) {
+                buffer_appendf(buf, "[%s]", name);
+            } else {
+                buffer_append_str(buf, name);
+            }
+        }
+
+        buffer_append_str(buf, "\n");
+        player_send(player, buf->data);
+    }
+
 }
