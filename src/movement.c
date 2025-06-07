@@ -1,6 +1,4 @@
 // movement.c
-#define LOG_LEVEL 5
-
 #include "movement.h"
 
 #include "act.h"
@@ -60,11 +58,15 @@ run:
 
 static bool act_move_perform(Act *act) {
     ActMove *a = (ActMove*)act;
+    CHECK(a->status >= ACT_MOVE_OKAY && a->status <= ACT_MOVE_EXIT_CLOSED);
+
 
     if (a->status != ACT_MOVE_OKAY) {
         act_perceive_to(act, act->actor);
         return false;
     }
+
+    CHECK(a->from && a->to && a->exit);
 
     act_perceive_at(act);
     actor_move_contents(a->from, act->actor, a->to);
@@ -81,28 +83,27 @@ static void act_move_player_perceive(Act *act, Actor *viewer) {
 
     log_trace("Actor %d viewer %d", act->actor->id, viewer->id);
 
-    if (a->status != ACT_MOVE_OKAY) {
-        switch (a->status) {
-            case ACT_MOVE_NOT_IN_ROOM:
-                player_send(viewer->player, "You can't go anywhere from here.\n");
-                break;
-            case ACT_MOVE_NO_EXIT:
-                player_send(viewer->player, "You can't go that way.\n");
-                break;
-            case ACT_MOVE_EXIT_CLOSED:
-                player_sendf(viewer->player, "The %s is closed.\n", a->exit->keyword);
-                break;
-            case ACT_MOVE_OKAY:
-                CHECK(false);
-        }
-    } else if (viewer == act->actor) {
-        player_sendf(viewer->player, "You move to the %s.\n", direction_to_string(a->direction));
-    } else if (viewer->location_id == a->from->id) {
-        player_sendf(viewer->player, "%s moves to the %s.\n", act->actor->appearance.name, direction_to_string(a->direction));
-    } else if (viewer->location_id == a->to->id) {
-        player_sendf(viewer->player, "%s arrives from the %s.\n", act->actor->appearance.name, direction_to_string(direction_reverse(a->direction)));
-    } else {
-        log_error("viewer %u not handled, viewer location %u, from location %u, to location %u", viewer->id, viewer->location_id, a->from->id, a->to->id);
+    switch (a->status) {
+        case ACT_MOVE_NOT_IN_ROOM:
+            player_send(viewer->player, "You can't go anywhere from here.\n");
+            break;
+        case ACT_MOVE_NO_EXIT:
+            player_send(viewer->player, "You can't go that way.\n");
+            break;
+        case ACT_MOVE_EXIT_CLOSED:
+            player_sendf(viewer->player, "The %s is closed.\n", a->exit->keyword);
+            break;
+        case ACT_MOVE_OKAY:
+            if (viewer == act->actor) {
+                player_sendf(viewer->player, "You move to the %s.\n", direction_to_string(a->direction));
+            } else if (viewer->location_id == a->from->id) {
+                player_sendf(viewer->player, "%s moves to the %s.\n", act->actor->appearance.name, direction_to_string(a->direction));
+            } else if (viewer->location_id == a->to->id) {
+                player_sendf(viewer->player, "%s arrives from the %s.\n", act->actor->appearance.name, direction_to_string(direction_reverse(a->direction)));
+            } else {
+                log_error("viewer %u not handled, viewer location %u, from location %u, to location %u", viewer->id, viewer->location_id, a->from->id, a->to->id);
+            }
+            break;
     }
 }
 
