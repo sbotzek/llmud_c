@@ -10,6 +10,7 @@
 #include "room.h"
 #include "log.h"
 #include "movement.h"
+#include "interact.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -120,7 +121,7 @@ void player_state_enter_playing(Player *player, const char *name) {
     actor->player = player;
     player->actor = actor;
     player_send(player, "You have entered the world.\n");
-    cmd_look(actor, NULL);
+    act_examine_location(actor);
 }
 
 void player_state_enter_character_creation(Player *player) {

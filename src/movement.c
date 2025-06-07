@@ -7,6 +7,7 @@
 #include "player.h"
 #include "world.h"
 #include "log.h"
+#include "interact.h"
 
 #include <stdio.h>
 #include <stddef.h>
@@ -71,7 +72,7 @@ static bool act_move_perform(Act *act) {
     actor_move_contents(a->from, act->actor, a->to);
     act_perceive_at_except(act, (Actor*[]){act->actor, NULL});
 
-    cmd_look(act->actor, NULL);
+    act_examine_location(act->actor);
 
     return true;
 }

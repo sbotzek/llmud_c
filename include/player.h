@@ -66,7 +66,6 @@ bool player_validate_name(const char *name);
 bool player_name_exists(const char *name);
 
 // best place for these for now
-void cmd_look(Actor *actor, const char *args);
 void cmd_quit(Actor *actor, const char *args);
 
 #endif // PLAYER_H

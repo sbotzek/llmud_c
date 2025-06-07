@@ -9,6 +9,9 @@ typedef enum ActType {
 
     ACT_MOVE,
 
+    ACT_EXAMINE_LOCATION,
+    ACT_EXAMINE_DIRECTION,
+
     ACT_MAX,
 } ActType;
 
