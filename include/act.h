@@ -9,7 +9,7 @@ typedef enum ActType {
 
     ACT_MOVE,
 
-    MAX_ACT,
+    ACT_MAX,
 } ActType;
 
 typedef enum ActPhase {

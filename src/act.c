@@ -10,9 +10,12 @@
 
 #include <stdlib.h>
 
-static ActListenerFn *act_listener_fns[MAX_ACT];
+static ActListenerFn *act_listener_fns[ACT_MAX];
 
 bool act_run(Act *act) {
+    CHECK_MSG(act->type > ACT_NONE && act->type < ACT_MAX, "invalid act type");
+    CHECK_MSG(act->actor, "act must have actor");
+
     for (ActListenerFn *fn = act_listener_fns[act->type]; fn && *fn; fn++) {
         switch ((*fn)(ACT_PHASE_PERFORM, act)) {
             case ACT_LISTENER_CONTINUE: break;
@@ -38,12 +41,12 @@ bool act_run(Act *act) {
 }
 
 void act_register_listener(ActType type, ActListenerFn fn) {
-    CHECK_MSG(type > ACT_NONE && type < MAX_ACT, "Invalid actType");
+    CHECK_MSG(type > ACT_NONE && type < ACT_MAX, "invalid act type");
     CHECK(fn != NULL);
 
     if (!act_listener_fns[type]) {
         act_listener_fns[type] = calloc(2, sizeof(fn));
-        CHECK_MSG(act_listener_fns[type] != NULL, "act_register_listener: calloc failed");
+        CHECK_MSG(act_listener_fns[type] != NULL, "calloc failed");
         act_listener_fns[type][0] = fn;
         act_listener_fns[type][1] = NULL;
         return;
@@ -55,7 +58,8 @@ void act_register_listener(ActType type, ActListenerFn fn) {
     }
 
     act_listener_fns[type] = realloc(act_listener_fns[type], (count + 2) * sizeof(fn));
-    CHECK_MSG(act_listener_fns[type] != NULL, "act_register_listener: realloc failed");
+    CHECK_MSG(act_listener_fns[type] != NULL, "realloc failed");
+
     act_listener_fns[type][count] = fn;
     act_listener_fns[type][count + 1] = NULL;
 }
@@ -87,31 +91,31 @@ void act_perceive_location(Act *act, ActorID location_id) {
 }
 
 void act_perceive_location_except(Act *act, ActorID location_id, Actor *exclude[]) {
-    log_trace("act_perceive_location_except: type %d, actor %u, location %u", act->type, act->actor->id, location_id);
+    log_trace("type %d, actor %u, location %u", act->type, act->actor->id, location_id);
     Actor *location;
 
     if (location_id != INVALID_ACTOR_ID) {
         location = world_find_actor(act->actor->location_id);
         if (!location) {
-            log_error("act_perceive_location_except: unable to find location [%u] for actor [%u]", act->actor->id, location_id);
+            log_error("unable to find location [%u] for actor [%u]", act->actor->id, location_id);
         }
     } else {
         location = NULL;
     }
 
     if (location) {
-        log_trace("act_perceive_location_except: found location %u", location->id);
+        log_trace("found location %u", location->id);
         if (!array_contains(exclude, location)) {
-            log_trace("act_perceive_location_except: percieving to location %u", location->id);
+            log_trace("percieving to location %u", location->id);
             act_perceive_to(act, location);
         }
 
         for (Actor *observer = location->contents; observer; observer = observer->next_contents) {
-            log_trace("act_perceive_location_except: found observer %u", observer->id);
+            log_trace("found observer %u", observer->id);
             if (observer->dead) continue;
 
             if (!array_contains(exclude, observer)) {
-                log_trace("act_perceive_location_except: percieving to observer %u", observer->id);
+                log_trace("percieving to observer %u", observer->id);
                 act_perceive_to(act, observer);
             }
         }

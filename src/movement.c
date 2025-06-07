@@ -60,7 +60,6 @@ static bool act_move_perform(Act *act) {
     ActMove *a = (ActMove*)act;
     CHECK(a->status >= ACT_MOVE_OKAY && a->status <= ACT_MOVE_EXIT_CLOSED);
 
-
     if (a->status != ACT_MOVE_OKAY) {
         act_perceive_to(act, act->actor);
         return false;
