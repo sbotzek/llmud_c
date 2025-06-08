@@ -5,11 +5,11 @@
 #include "act.h"
 
 typedef enum ActMoveStatus {
-    ACT_MOVE_OKAY,
+    ACT_MOVE_STATUS_OKAY,
 
-    ACT_MOVE_NOT_IN_ROOM,
-    ACT_MOVE_NO_EXIT,
-    ACT_MOVE_EXIT_CLOSED,
+    ACT_MOVE_STATUS_NOT_IN_ROOM,
+    ACT_MOVE_STATUS_NO_EXIT,
+    ACT_MOVE_STATUS_EXIT_CLOSED,
 } ActMoveStatus;
 
 typedef struct ActMove {
