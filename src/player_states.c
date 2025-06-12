@@ -354,6 +354,23 @@ static void list_account_characters(Player *player) {
     }
 }
 
+typedef void (*PlayingCommandFn)(Actor *actor, const char *args);
+struct PlayingCommand {
+    const char *cmd;
+    PlayingCommandFn fn;
+};
+
+struct PlayingCommand playing_command_fns[] = {
+    {"north", cmd_north},
+    {"south", cmd_south},
+    {"east", cmd_east},
+    {"west", cmd_west},
+    {"up", cmd_up},
+    {"down", cmd_down},
+    {"look", cmd_look},
+    {NULL, NULL},
+};
+
 static void handle_playing_input(Player *player, const char *line) {
     CHECK(player != NULL);
     CHECK(player->actor != NULL);
@@ -365,23 +382,24 @@ static void handle_playing_input(Player *player, const char *line) {
 
     if (strcmp(cmd, "quit") == 0) {
         cmd_quit(actor, rest);
-    } else if (strcmp(cmd, "look") == 0) {
-        cmd_look(actor, rest);
-    } else if (strcmp(cmd, "north") == 0) {
-        cmd_north(actor, rest);
-    } else if (strcmp(cmd, "south") == 0) {
-        cmd_south(actor, rest);
-    } else if (strcmp(cmd, "east") == 0) {
-        cmd_east(actor, rest);
-    } else if (strcmp(cmd, "west") == 0) {
-        cmd_west(actor, rest);
-    } else if (strcmp(cmd, "up") == 0) {
-        cmd_up(actor, rest);
-    } else if (strcmp(cmd, "down") == 0) {
-        cmd_down(actor, rest);
-    } else {
-        player_sendf(player, "Unknown command '%s'.\n", cmd);
+        return;
     }
+
+    struct PlayingCommand *data = NULL;
+
+    for (int i = 0; playing_command_fns[i].cmd; ++i) {
+        if (strncmp(cmd, playing_command_fns[i].cmd, strlen(cmd)) == 0) {
+            data = &playing_command_fns[i];
+            break;
+        }
+    }
+
+    if (!data) {
+        player_sendf(player, "Unknown command '%s'.\n", cmd);
+        return;
+    }
+
+    data->fn(actor, rest);
 }
 
 static void handle_character_creation_input(Player *player, const char *line) {
