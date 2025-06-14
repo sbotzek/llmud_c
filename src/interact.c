@@ -52,26 +52,29 @@ void act_examine_location_player_perceive(Act *act, Actor *viewer) {
 
     // Show exits
     if (location->room) {
-        Buffer *buf = buffer_new_scratch(64);
-        buffer_append_str(buf, "Exits: ");
+        char cbuf[256];
+        StaticBuffer buf;
+        sbuffer_init(&buf, cbuf, sizeof(cbuf));
+
+        sbuffer_append_str(&buf, "Exits: ");
         bool first = true;
         for (int i = 0; i < DIR_COUNT; ++i) {
             Exit *e = location->room->exits[i];
             if (!e) continue;
 
-            if (!first) buffer_append_str(buf, " ");
+            if (!first) sbuffer_append_str(&buf, " ");
             first = false;
 
             const char *name = direction_to_string((Direction)i);
             if (e->closed) {
-                buffer_appendf(buf, "[%s]", name);
+                sbuffer_appendf(&buf, "[%s]", name);
             } else {
-                buffer_append_str(buf, name);
+                sbuffer_append_str(&buf, name);
             }
         }
 
-        buffer_append_str(buf, "\n");
-        player_send(player, buf->data);
+        sbuffer_append_str(&buf, "\n");
+        player_send(player, buf.data);
     }
 }
 

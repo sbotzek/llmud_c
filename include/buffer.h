@@ -6,12 +6,18 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-
 typedef struct Buffer {
     char *data;
     size_t length;
     size_t capacity;
 } Buffer;
+
+typedef struct StaticBuffer {
+    char *data;
+    size_t length;
+    const size_t capacity;
+    bool overflow;
+} StaticBuffer;
 
 // Init/free for stack or embedded use
 void buffer_init(Buffer *buf, size_t initial_capacity);
@@ -20,12 +26,6 @@ void buffer_cleanup(Buffer *buf);
 // Heap-allocated variant
 Buffer *buffer_new(size_t initial_capacity);
 void buffer_free(Buffer *buf);
-
-// Allocates a new scratch buffer (auto-freed by buffer_gc_scratch)
-Buffer *buffer_new_scratch(size_t initial_capacity);
-// Removes the buffer from scratch GC management.
-// Crashes if buffer is not a scratch buffer.
-void buffer_unscratch(Buffer *buf);
 
 // Append raw data or strings
 void buffer_append(Buffer *buf, const char *data, size_t size);
@@ -44,8 +44,27 @@ void buffer_appendf(Buffer *buf, const char *fmt, ...);
 // Replaces buffer contents with formatted text.
 void buffer_printf(Buffer *buf, const char *fmt, ...);
 
-
 // Trims leading and trailing whitespace from the buffer
 void buffer_trim(Buffer *buf);
+
+// Init/free for stack or embedded use
+void sbuffer_init(StaticBuffer *buf, char *data, size_t capacity);
+
+// Append raw data or strings
+void sbuffer_append(StaticBuffer *buf, const char *data, size_t size);
+void sbuffer_append_str(StaticBuffer *buf, const char *str);
+
+// Clear content (length = 0), keep memory
+void sbuffer_clear(StaticBuffer *buf);
+
+// Safe printf-style append to the buffer
+void sbuffer_vappendf(StaticBuffer *buf, const char *fmt, va_list args);
+void sbuffer_appendf(StaticBuffer *buf, const char *fmt, ...);
+
+// Replaces buffer contents with formatted text.
+void sbuffer_printf(StaticBuffer *buf, const char *fmt, ...);
+
+// Trims leading and trailing whitespace from the buffer
+void sbuffer_trim(StaticBuffer *buf);
 
 #endif // BUFFER_H

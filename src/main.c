@@ -18,7 +18,6 @@ int main(int argc, char **argv) {
         {.name="telnet.process_input",   .tick=telnet_process_input_tick,  .frequency=1},
         {.name="telnet.flush",           .tick=telnet_flush_tick,          .frequency=1},
         {.name="telnet.gc",              .tick=telnet_gc_tick,             .frequency=1},
-        {.name="buffer.gc_scratch",      .tick=buffer_gc_scratch,          .frequency=1},
     };
 
     size_t process_count = sizeof(processes) / sizeof(GameProcess);

@@ -7,14 +7,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// Internal struct for scratch buffers
-typedef struct ScratchHeader {
-    struct ScratchHeader *next;
-    Buffer buffer;
-} ScratchHeader;
-
-static ScratchHeader *scratch_head = NULL;
-
 void buffer_init(Buffer *buf, size_t initial_capacity) {
     if (initial_capacity == 0) {
         initial_capacity = 1;
@@ -48,60 +40,6 @@ void buffer_free(Buffer *buf) {
     if (!buf) return;
     buffer_cleanup(buf);
     free(buf);
-}
-
-Buffer *buffer_new_scratch(size_t initial_capacity) {
-    ScratchHeader *hdr = calloc(1, sizeof(ScratchHeader));
-    CHECK_MSG(hdr != NULL,
-              "buffer_new_scratch: calloc of %zu bytes failed", sizeof *hdr);
-
-    buffer_init(&hdr->buffer, initial_capacity);
-    hdr->next = scratch_head;
-    scratch_head = hdr;
-    return &hdr->buffer;
-}
-
-void buffer_gc_scratch(void) {
-    ScratchHeader *curr = scratch_head;
-    while (curr) {
-        ScratchHeader *next = curr->next;
-        buffer_cleanup(&curr->buffer);
-        free(curr);
-        curr = next;
-    }
-    scratch_head = NULL;
-}
-
-void buffer_unscratch(Buffer *buf) {
-    ScratchHeader *prev = NULL;
-    ScratchHeader *curr = scratch_head;
-
-    while (curr) {
-        if (&curr->buffer == buf) {
-            if (prev) {
-                prev->next = curr->next;
-            } else {
-                scratch_head = curr->next;
-            }
-
-            // Allocate new heap buffer
-            Buffer *heap_buf = malloc(sizeof(Buffer));
-            CHECK_MSG(heap_buf != NULL, "buffer_unscratch: malloc failed");
-
-            *heap_buf = *buf;  // copy contents
-            buffer_cleanup(&curr->buffer); // no-op, but consistent
-            free(curr);
-
-            *buf = *heap_buf;
-            free(heap_buf);
-            return;
-        }
-
-        prev = curr;
-        curr = curr->next;
-    }
-
-    CHECK_MSG(false, "buffer_unscratch: buffer not found in scratch list");
 }
 
 void buffer_printf(Buffer *buf, const char *fmt, ...) {
@@ -169,6 +107,104 @@ void buffer_appendf(Buffer *buf, const char *fmt, ...) {
 }
 
 void buffer_trim(Buffer *buf) {
+    if (!buf || buf->length == 0) return;
+    size_t start = 0;
+    size_t end = buf->length;
+    while (start < end && isspace((unsigned char)buf->data[start])) start++;
+    while (end > start && isspace((unsigned char)buf->data[end - 1])) end--;
+    size_t new_len = end - start;
+    if (start > 0 && new_len > 0) {
+        memmove(buf->data, buf->data + start, new_len);
+    }
+    buf->data[new_len] = '\0';
+    buf->length = new_len;
+}
+
+
+void sbuffer_init(StaticBuffer *buf, char *data, size_t capacity) {
+    buf->data = data;
+    buf->length = 0;
+    *((size_t*)&buf->capacity) = capacity;
+    buf->data[0] = '\0';
+}
+
+void sbuffer_printf(StaticBuffer *buf, const char *fmt, ...) {
+    sbuffer_clear(buf);
+
+    va_list args;
+    va_start(args, fmt);
+    sbuffer_vappendf(buf, fmt, args);
+    va_end(args);
+}
+
+void sbuffer_append(StaticBuffer *buf, const char *data, size_t size) {
+    CHECK(buf->length < buf->capacity);
+
+    if (buf->overflow) {
+        return;
+    }
+
+    if (size >= buf->capacity - buf->length) {
+        log_warn("append size %zu >= remaining capacity %zu", size, buf->capacity - buf->length);
+        size = buf->capacity - buf->length - 1;
+        buf->overflow = true;
+    }
+
+    memcpy(buf->data + buf->length, data, size);
+    buf->length += size;
+    buf->data[buf->length] = '\0';
+}
+
+void sbuffer_append_str(StaticBuffer *buf, const char *str) {
+    sbuffer_append(buf, str, strlen(str));
+}
+
+void sbuffer_clear(StaticBuffer *buf) {
+    buf->length = 0;
+    buf->data[0] = '\0';
+    buf->overflow = false;
+}
+
+void sbuffer_vappendf(StaticBuffer *buf, const char *fmt, va_list args) {
+    size_t remaining = (buf->capacity > buf->length) ? (buf->capacity - buf->length) : 0;
+
+    if (remaining <= 1) {
+        buf->overflow = true;
+        return;
+    }
+
+    va_list args_copy;
+    va_copy(args_copy, args);
+
+    char temp[remaining];  // remaining ≥ 2, safe for vsnprintf + \0
+    int needed = vsnprintf(temp, remaining, fmt, args_copy);
+
+    va_end(args_copy);
+
+    if (needed < 0) {
+        log_warn("sbuffer_vappendf: vsnprintf error");
+        buf->overflow = true;
+        return;
+    }
+
+    // Write whatever vsnprintf gave us — it is always null-terminated
+    sbuffer_append(buf, temp, strlen(temp));
+
+    if ((size_t)needed >= remaining) {
+        // vsnprintf result was truncated — it needed more room
+        buf->overflow = true;
+    }
+}
+
+
+void sbuffer_appendf(StaticBuffer *buf, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    sbuffer_vappendf(buf, fmt, args);
+    va_end(args);
+}
+
+void sbuffer_trim(StaticBuffer *buf) {
     if (!buf || buf->length == 0) return;
     size_t start = 0;
     size_t end = buf->length;
