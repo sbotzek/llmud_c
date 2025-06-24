@@ -10,7 +10,7 @@
 // Static function declarations
 static void parse_chunk(FileChunkReader *r);
 static void chunk_reset(FileChunk *chunk);
-static void trim_trailing_newlines(Buffer *buf);
+static void trim_trailing_newlines(DynamicBuffer *buf);
 
 // Implementation
 
@@ -21,23 +21,23 @@ void file_chunk_reader_init(FileChunkReader *r, FILE *fp) {
     r->fp = fp;
     r->line_number = 0;
 
-    buffer_init(&r->raw, 128);
-    buffer_init(&r->chunk.tag, 32);
-    buffer_init(&r->chunk.value, 64);
+    dbuffer_init(&r->raw, 128);
+    dbuffer_init(&r->chunk.tag, 32);
+    dbuffer_init(&r->chunk.value, 64);
     r->chunk.type = FILE_CHUNK_FIELD;
 }
 
 void file_chunk_reader_cleanup(FileChunkReader *r) {
     CHECK(r);
-    buffer_cleanup(&r->raw);
-    buffer_cleanup(&r->chunk.tag);
-    buffer_cleanup(&r->chunk.value);
+    dbuffer_cleanup(&r->raw);
+    dbuffer_cleanup(&r->chunk.tag);
+    dbuffer_cleanup(&r->chunk.value);
 }
 
 bool file_chunk_read(FileChunkReader *r) {
     CHECK(r);
 
-    buffer_clear(&r->raw);
+    dbuffer_clear(&r->raw);
     chunk_reset(&r->chunk);
 
     int first_ch;
@@ -49,7 +49,7 @@ bool file_chunk_read(FileChunkReader *r) {
         while (ch != '~'
             && (first_ch != '#' || (ch != '\r' && ch != '\n'))
             && ch != EOF) {
-            buffer_append(&r->raw, (char *)&ch, 1);
+            dbuffer_append(&r->raw, (char *)&ch, 1);
             ch = fgetc(r->fp);
         }
 
@@ -79,12 +79,12 @@ bool file_chunk_read(FileChunkReader *r) {
 // Internal helpers
 
 static void chunk_reset(FileChunk *chunk) {
-    buffer_clear(&chunk->tag);
-    buffer_clear(&chunk->value);
+    dbuffer_clear(&chunk->tag);
+    dbuffer_clear(&chunk->value);
     chunk->type = FILE_CHUNK_FIELD;
 }
 
-static void trim_trailing_newlines(Buffer *buf) {
+static void trim_trailing_newlines(DynamicBuffer *buf) {
     while (buf->length > 0 &&
           (buf->data[buf->length - 1] == '\n' ||
            buf->data[buf->length - 1] == '\r')) {
@@ -106,22 +106,22 @@ static void parse_chunk(FileChunkReader *r) {
 
         if (space) {
             size_t tag_len = space - rest;
-            buffer_append(&r->chunk.tag, rest, tag_len);
-            buffer_append_str(&r->chunk.value, space + 1);
+            dbuffer_append(&r->chunk.tag, rest, tag_len);
+            dbuffer_append_str(&r->chunk.value, space + 1);
         } else {
-            buffer_append_str(&r->chunk.tag, rest);
-            buffer_clear(&r->chunk.value);
+            dbuffer_append_str(&r->chunk.tag, rest);
+            dbuffer_clear(&r->chunk.value);
         }
 
-        buffer_trim(&r->chunk.tag);
-        buffer_trim(&r->chunk.value);
+        dbuffer_trim(&r->chunk.tag);
+        dbuffer_trim(&r->chunk.value);
 
         if (strcmp(r->chunk.tag.data, "end") == 0) {
             // Move the actual section name into tag
-            buffer_clear(&r->chunk.tag);
-            buffer_append_str(&r->chunk.tag, r->chunk.value.data);
-            buffer_trim(&r->chunk.tag);
-            buffer_clear(&r->chunk.value);
+            dbuffer_clear(&r->chunk.tag);
+            dbuffer_append_str(&r->chunk.tag, r->chunk.value.data);
+            dbuffer_trim(&r->chunk.tag);
+            dbuffer_clear(&r->chunk.value);
             r->chunk.type = FILE_CHUNK_SECTION_END;
         } else {
             r->chunk.type = FILE_CHUNK_SECTION_START;
@@ -135,12 +135,12 @@ static void parse_chunk(FileChunkReader *r) {
     CHECK_MSG(sep, "Expected colon in field line at line %d", r->line_number);
 
     size_t key_len = sep - line;
-    buffer_append(&r->chunk.tag, line, key_len);
-    buffer_trim(&r->chunk.tag);
+    dbuffer_append(&r->chunk.tag, line, key_len);
+    dbuffer_trim(&r->chunk.tag);
 
     const char *val = sep + 1;
-    buffer_append_str(&r->chunk.value, val);
-    buffer_trim(&r->chunk.value);
+    dbuffer_append_str(&r->chunk.value, val);
+    dbuffer_trim(&r->chunk.value);
 
     r->chunk.type = FILE_CHUNK_FIELD;
 }

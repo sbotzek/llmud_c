@@ -54,15 +54,15 @@ typedef enum {
 
 typedef struct FileChunk {
     FileChunkType type;
-    Buffer tag;    // For FIELD: key; for SECTION: section name
-    Buffer value;  // Only valid for FIELD
+    DynamicBuffer tag;    // For FIELD: key; for SECTION: section name
+    DynamicBuffer value;  // Only valid for FIELD
 } FileChunk;
 
 typedef struct FileChunkReader {
     FILE   *fp;
     int     line_number;
 
-    Buffer  raw;    // Raw chunk line, including trailing ~
+    DynamicBuffer  raw;    // Raw chunk line, including trailing ~
     FileChunk chunk;
 } FileChunkReader;
 

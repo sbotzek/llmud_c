@@ -149,9 +149,9 @@ void player_save_character(Actor *actor) {
     ensure_directory(DATA_DIR);
     ensure_directory(DATA_DIR "/pcs");
 
-    Buffer path;
-    buffer_init(&path, 0);
-    buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name);
+    DynamicBuffer path;
+    dbuffer_init(&path, 0);
+    dbuffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name);
     str_to_lower(path.data);
 
     FILE *fp = fopen(path.data, "w");
@@ -164,18 +164,18 @@ void player_save_character(Actor *actor) {
     appearance_write_section(&actor->appearance, fp, "appearance");
 
     fclose(fp);
-    buffer_cleanup(&path);
+    dbuffer_cleanup(&path);
 }
 
 Actor *player_load_character(const char *name) {
     CHECK(name != NULL);
 
-    Buffer *path = buffer_new(128);
-    buffer_printf(path, DATA_DIR "/pcs/%s.pchar", name);
+    DynamicBuffer *path = dbuffer_new(128);
+    dbuffer_printf(path, DATA_DIR "/pcs/%s.pchar", name);
     str_to_lower(path->data);
 
     FILE *fp = fopen(path->data, "r");
-    buffer_free(path);
+    dbuffer_free(path);
 
     if (!fp) {
         return NULL; // File doesn't exist.

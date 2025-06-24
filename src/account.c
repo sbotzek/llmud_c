@@ -48,7 +48,7 @@ Account *account_new(const char *username, const char *password) {
 
     memcpy(account->username, username, ulen + 1);
     account->password_hash = generate_password_hash(password);
-    buffer_init(&account->character_names, 0);
+    dbuffer_init(&account->character_names, 0);
 
     return account;
 }
@@ -69,7 +69,7 @@ void account_free(Account *account) {
         memset(account->password_hash, 0, strlen(account->password_hash));
         free(account->password_hash);
     }
-    buffer_cleanup(&account->character_names);
+    dbuffer_cleanup(&account->character_names);
     free(account);
 }
 
@@ -118,7 +118,7 @@ Account *account_load(const char *username) {
     file_chunk_reader_init(&r, f);
 
     Account *acc = calloc(1, sizeof(Account));
-    buffer_init(&acc->character_names, 0);
+    dbuffer_init(&acc->character_names, 0);
     CHECK(acc);
 
     while (file_chunk_read(&r)) {
@@ -134,7 +134,7 @@ Account *account_load(const char *username) {
             acc->password_hash = str_copy(r.chunk.value.data);
             CHECK_MSG(acc->password_hash, "OOM loading password hash");
         } else if (strcmp(r.chunk.tag.data, "character_names") == 0) {
-            buffer_append_str(&acc->character_names, r.chunk.value.data);
+            dbuffer_append_str(&acc->character_names, r.chunk.value.data);
         } else {
             log_warn("Unknown account field '%s' at line %d", r.chunk.tag.data, r.line_number);
         }
@@ -165,8 +165,8 @@ void account_add_character(Account *account, const char *name) {
     CHECK(account != NULL);
     CHECK(name != NULL);
     if (account->character_names.length > 0)
-        buffer_append_str(&account->character_names, " ");
-    buffer_append_str(&account->character_names, name);
+        dbuffer_append_str(&account->character_names, " ");
+    dbuffer_append_str(&account->character_names, name);
     str_to_lower(account->character_names.data);
 }
 

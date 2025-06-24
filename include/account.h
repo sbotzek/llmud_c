@@ -12,7 +12,7 @@
 typedef struct Account {
     char   username[ACCOUNT_USERNAME_SIZE];
     char  *password_hash;   /* malloc’d copy of the crypt() output */
-    Buffer character_names;
+    DynamicBuffer character_names;
 } Account;
 
 /**

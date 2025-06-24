@@ -36,7 +36,7 @@ TelnetConn *telnet_conn_new(int socket_fd, struct sockaddr_in *addr) {
     inet_ntop(AF_INET, &addr->sin_addr, conn->ip_string, sizeof conn->ip_string);
     conn->connected = true;
 
-    conn->output = buffer_new(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
+    conn->output = dbuffer_new(TELNET_CONN_INITIAL_OUTPUT_CAPACITY);
 
     return conn;
 }
@@ -54,7 +54,7 @@ void telnet_conn_free(TelnetConn *conn) {
     }
 
     close(conn->socket_fd);
-    buffer_free(conn->output);
+    dbuffer_free(conn->output);
     free(conn);
 }
 
@@ -146,22 +146,22 @@ void telnet_conn_read(TelnetConn *conn) {
 }
 
 void telnet_conn_write(TelnetConn *conn, const char *text) {
-    buffer_append(conn->output, text, strlen(text));
+    dbuffer_append(conn->output, text, strlen(text));
 }
 
 void telnet_conn_writef(TelnetConn *conn, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    buffer_vappendf(conn->output, fmt, args);
+    dbuffer_vappendf(conn->output, fmt, args);
     va_end(args);
 }
 
 void telnet_conn_vwritef(TelnetConn *conn, const char *fmt, va_list args) {
-    buffer_vappendf(conn->output, fmt, args);
+    dbuffer_vappendf(conn->output, fmt, args);
 }
 
 void telnet_conn_flush(TelnetConn *conn) {
-    Buffer *b = conn->output;
+    DynamicBuffer *b = conn->output;
     if (b->length == 0) return;
 
     log_trace("telnet_flush_tick: ip [%s]: flushing [%u] bytes", conn->ip_string, b->length);

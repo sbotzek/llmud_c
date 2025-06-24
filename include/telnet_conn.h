@@ -52,7 +52,7 @@ struct TelnetConn {
     bool   input_line_ready;
     bool   input_discarding;
 
-    Buffer *output;
+    DynamicBuffer *output;
 
     TelnetState    telnet_state;
     unsigned char  telnet_command;

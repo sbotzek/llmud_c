@@ -9,23 +9,18 @@
 typedef struct Buffer {
     char *data;
     size_t length;
-    size_t capacity;
-} Buffer;
-
-typedef struct StaticBuffer {
-    char *data;
-    size_t length;
     const size_t capacity;
     bool overflow;
-} StaticBuffer;
+} Buffer;
+
+typedef struct DynamicBuffer {
+    char *data;
+    size_t length;
+    size_t capacity;
+} DynamicBuffer;
 
 // Init/free for stack or embedded use
-void buffer_init(Buffer *buf, size_t initial_capacity);
-void buffer_cleanup(Buffer *buf);
-
-// Heap-allocated variant
-Buffer *buffer_new(size_t initial_capacity);
-void buffer_free(Buffer *buf);
+void buffer_init(Buffer *buf, char *data, size_t capacity);
 
 // Append raw data or strings
 void buffer_append(Buffer *buf, const char *data, size_t size);
@@ -33,9 +28,6 @@ void buffer_append_str(Buffer *buf, const char *str);
 
 // Clear content (length = 0), keep memory
 void buffer_clear(Buffer *buf);
-
-// Ensure at least N bytes capacity
-void buffer_reserve(Buffer *buf, size_t needed_capacity);
 
 // Safe printf-style append to the buffer
 void buffer_vappendf(Buffer *buf, const char *fmt, va_list args);
@@ -48,23 +40,31 @@ void buffer_printf(Buffer *buf, const char *fmt, ...);
 void buffer_trim(Buffer *buf);
 
 // Init/free for stack or embedded use
-void sbuffer_init(StaticBuffer *buf, char *data, size_t capacity);
+void dbuffer_init(DynamicBuffer *buf, size_t initial_capacity);
+void dbuffer_cleanup(DynamicBuffer *buf);
+
+// Heap-allocated variant
+DynamicBuffer *dbuffer_new(size_t initial_capacity);
+void dbuffer_free(DynamicBuffer *buf);
 
 // Append raw data or strings
-void sbuffer_append(StaticBuffer *buf, const char *data, size_t size);
-void sbuffer_append_str(StaticBuffer *buf, const char *str);
+void dbuffer_append(DynamicBuffer *buf, const char *data, size_t size);
+void dbuffer_append_str(DynamicBuffer *buf, const char *str);
 
 // Clear content (length = 0), keep memory
-void sbuffer_clear(StaticBuffer *buf);
+void dbuffer_clear(DynamicBuffer *buf);
+
+// Ensure at least N bytes capacity
+void dbuffer_reserve(DynamicBuffer *buf, size_t needed_capacity);
 
 // Safe printf-style append to the buffer
-void sbuffer_vappendf(StaticBuffer *buf, const char *fmt, va_list args);
-void sbuffer_appendf(StaticBuffer *buf, const char *fmt, ...);
+void dbuffer_vappendf(DynamicBuffer *buf, const char *fmt, va_list args);
+void dbuffer_appendf(DynamicBuffer *buf, const char *fmt, ...);
 
 // Replaces buffer contents with formatted text.
-void sbuffer_printf(StaticBuffer *buf, const char *fmt, ...);
+void dbuffer_printf(DynamicBuffer *buf, const char *fmt, ...);
 
 // Trims leading and trailing whitespace from the buffer
-void sbuffer_trim(StaticBuffer *buf);
+void dbuffer_trim(DynamicBuffer *buf);
 
 #endif // BUFFER_H
