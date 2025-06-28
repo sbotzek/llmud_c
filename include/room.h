@@ -2,7 +2,8 @@
 #ifndef ROOM_H
 #define ROOM_H
 
-#include "actor.h"
+#include <stdbool.h>
+#include "actor_id.h"
 
 typedef enum {
     DIR_NORTH,

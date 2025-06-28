@@ -4,7 +4,9 @@
 
 #include <stddef.h>
 #include <stdbool.h>
-#include "actor.h"
+#include "actor_id.h"
+
+typedef struct Actor Actor;
 
 extern Actor *world_actors;
 

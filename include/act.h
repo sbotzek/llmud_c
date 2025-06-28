@@ -1,7 +1,10 @@
 // act.h
 #ifndef ACT_H
 #define ACT_H
-#include "actor.h"
+#include <stdbool.h>
+#include "actor_id.h"
+
+typedef struct Actor Actor;
 
 // All acts are declared in this enum.
 typedef enum ActType {

@@ -8,6 +8,7 @@
 #include "world.h"
 #include "log.h"
 #include "interact.h"
+#include "actor.h"
 
 #include <stdio.h>
 #include <stddef.h>

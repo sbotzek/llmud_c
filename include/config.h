@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "actor.h"
+#include "actor_id.h"
 
 // Global configuration options for the MUD.
 typedef struct Config {

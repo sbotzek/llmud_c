@@ -1,6 +1,7 @@
 // player_states.c
 
 #include "player_states.h"
+#include "actor.h"
 #include "player.h"
 #include "telnet_conn.h"
 #include "world.h"

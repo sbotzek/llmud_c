@@ -1,5 +1,6 @@
 // world.c
 #include "world.h"
+#include "actor.h"
 
 #include "macros.h"
 #include "log.h"

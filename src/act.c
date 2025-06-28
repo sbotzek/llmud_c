@@ -1,7 +1,7 @@
 // act.c
 #include "act.h"
-
 #include "actor.h"
+
 #include "array.h"
 #include "macros.h"
 #include "player.h"
