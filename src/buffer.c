@@ -11,6 +11,7 @@ void buffer_init(Buffer *buf, char *data, size_t capacity) {
     buf->data = data;
     buf->length = 0;
     *((size_t*)&buf->capacity) = capacity;
+    buf->overflow = false;
     buf->data[0] = '\0';
 }
 
