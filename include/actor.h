@@ -4,12 +4,14 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "appearance.h"
 #include "actor_id.h"
 
 typedef struct Player Player;
 typedef struct Room Room;
 typedef struct Actor Actor;
+typedef struct FileChunkReader FileChunkReader;
 
 typedef struct Actor {
     ActorID id;
@@ -36,5 +38,9 @@ void actor_free(Actor* actor);
 void actor_add_contents(Actor *location, Actor *contents);
 void actor_remove_contents(Actor *location, Actor *contents);
 void actor_move_contents(Actor *location, Actor *contents, Actor *new_location);
+
+// — Serialization
+void actor_save(Actor *actor, FILE *fp, const char *section_name);
+Actor *actor_load(FileChunkReader *r, const char *section_name);
 
 #endif

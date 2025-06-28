@@ -3,7 +3,10 @@
 #define ROOM_H
 
 #include <stdbool.h>
+#include <stdio.h>
 #include "actor_id.h"
+
+typedef struct FileChunkReader FileChunkReader;
 
 typedef enum {
     DIR_NORTH,
@@ -31,5 +34,9 @@ typedef struct Room {
 const char *direction_to_string(Direction dir);
 Direction    string_to_direction(const char *s);
 Direction   direction_reverse(Direction direction);
+
+// — Serialization
+void room_write_section(const Room *room, FILE *fp, const char *section);
+void room_read_section(Room *room, FileChunkReader *r, const char *section);
 
 #endif //ROOM_H

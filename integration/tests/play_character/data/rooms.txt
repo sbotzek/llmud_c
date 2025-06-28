@@ -1,14 +1,20 @@
 #room
 id: 1~
+#appearance
 name: The Starting Room~
+#end appearance
 #end room
 
 #room
 id: 2~
+#appearance
 name: A Dusty Hallway~
+#end appearance
 #end room
 
 #room
 id: 3~
+#appearance
 name: The Treasure Vault~
+#end appearance
 #end room

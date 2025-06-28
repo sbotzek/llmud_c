@@ -157,11 +157,8 @@ void player_save_character(Actor *actor) {
     FILE *fp = fopen(path.data, "w");
     CHECK_MSG(fp != NULL, "Failed to create character file: %s", path.data);
 
-    // Write fields
-    file_chunk_write_int_field(fp, "location_id", location_id);
-
-    // Write sections
-    appearance_write_section(&actor->appearance, fp, "appearance");
+    // Use the general actor serialization system at top level
+    actor_save(actor, fp, NULL);
 
     fclose(fp);
 }
@@ -180,36 +177,19 @@ Actor *player_load_character(const char *name) {
         return NULL; // File doesn't exist.
     }
 
-    Actor *actor = actor_new();
     FileChunkReader reader;
     file_chunk_reader_init(&reader, fp);
 
-    // Read chunks
-    while (file_chunk_read(&reader)) {
-        FileChunk *chunk = &reader.chunk;
-
-        if (chunk->type == FILE_CHUNK_SECTION_START) {
-            if (strcmp(chunk->tag.data, "appearance") == 0) {
-                // Hand off appearance parsing
-                appearance_read_section(&actor->appearance, &reader, chunk->tag.data);
-            } else {
-                log_warn("Unknown section '%s' while loading character '%s'", chunk->tag.data, name);
-                file_chunk_skip_section(&reader, chunk->tag.data);
-            }
-        } else if (chunk->type == FILE_CHUNK_SECTION_END) {
-            // Should not happen at top level; log it
-            log_warn("Unexpected section end '%s' while loading character '%s'", chunk->tag.data, name);
-        } else if (chunk->type == FILE_CHUNK_FIELD) {
-            if (strcmp(chunk->tag.data, "location_id") == 0) {
-                actor->location_id = (ActorID)atoi(chunk->value.data);
-            } else {
-                log_warn("Unexpected field '%s' at top level while loading character '%s'", chunk->tag.data, name);
-            }
-        }
-    }
+    // Use the general actor deserialization system at top level
+    Actor *actor = actor_load(&reader, NULL);
 
     file_chunk_reader_cleanup(&reader);
     fclose(fp);
+
+    if (actor == NULL) {
+        log_error("player_load_character: No character data found for '%s'", name);
+        return NULL;
+    }
 
     // Validate appearance name (minimum field needed for a PC)
     if (actor->appearance.name == NULL) {
@@ -221,7 +201,6 @@ Actor *player_load_character(const char *name) {
         log_error("player_load_character: Invalid room id for character '%s'", name);
         actor_free(actor);
         return NULL;
-
     }
 
     actor->appearance.long_name = str_copy(actor->appearance.name);

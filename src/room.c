@@ -18,8 +18,6 @@
 
 #define ROOMS_PATH DATA_DIR "/rooms.txt"
 
-static Actor *read_one_room(FileChunkReader *r);
-
 void room_load_all(void) {
     ensure_directory(DATA_DIR);
 
@@ -35,7 +33,7 @@ void room_load_all(void) {
     while (file_chunk_read(&r)) {
         if (r.chunk.type == FILE_CHUNK_SECTION_START &&
             strcmp(r.chunk.tag.data, "room") == 0) {
-            Actor *actor = read_one_room(&r);
+            Actor *actor = actor_load(&r, "room");
             if (actor) {
                 world_add_actor(actor);
                 log_info("Loaded room [%u]: %s", actor->id, actor->appearance.name);
@@ -49,77 +47,6 @@ void room_load_all(void) {
     file_chunk_reader_cleanup(&r);
     fclose(fp);
 }
-
-static Actor *read_one_room(FileChunkReader *r) {
-    CHECK(r != NULL);
-
-    Actor *actor = NULL;
-
-    while (file_chunk_read(r)) {
-        FileChunk *chunk = &r->chunk;
-
-        if (chunk->type == FILE_CHUNK_SECTION_END &&
-            strcmp(chunk->tag.data, "room") == 0) {
-            break;
-        }
-
-        if (strcmp(chunk->tag.data, "id") == 0) {
-            ActorID id = (ActorID)atoi(chunk->value.data);
-
-            actor = actor_new_persistent(id);
-            actor->room = calloc(1, sizeof(Room));
-            CHECK_MSG(actor->room != NULL, "OOM allocating Room");
-        } else if (strcmp(chunk->tag.data, "name") == 0) {
-            actor->appearance.name = str_copy(chunk->value.data);
-            actor->appearance.long_name = str_copy(chunk->value.data);
-        } else if (strcmp(chunk->tag.data, "exit") == 0) {
-            Exit *exit = calloc(1, sizeof(Exit));
-            char *args = chunk->value.data;
-            char word[1024];
-
-            args = str_parse_word(args, word, sizeof(word));
-            exit->dir = string_to_direction(word);
-
-            if (args) {
-                args = str_parse_word(args, word, sizeof(word));
-                exit->to_room = (ActorID)atoi(word);
-            }
-
-            if (args) {
-                args = str_parse_word(args, word, sizeof(word));
-                exit->closed = strcmp(word, "true") == 0;
-            }
-
-            if (args) {
-                exit->keyword = str_copy(args);
-            }
-
-            if (actor->room->exits[exit->dir] != NULL) {
-                log_warn("Duplicate exit %d for %d.", exit->dir, actor->id);
-                free(actor->room->exits[exit->dir]->keyword);
-                actor->room->exits[exit->dir]->keyword = NULL;
-                free(actor->room->exits[exit->dir]);
-            }
-            actor->room->exits[exit->dir] = exit;
-        } else {
-            log_warn("Unknown room field: %s", chunk->tag.data);
-        }
-    }
-
-    if (actor == NULL) {
-        log_error("Skipping invalid room (no id)");
-        actor_free(actor);
-        return NULL;
-    }
-    if (actor->appearance.name == NULL) {
-        log_error("Skipping invalid room %d: missing name", actor->id);
-        actor_free(actor);
-        return NULL;
-
-    }
-    return actor;
-}
-
 
 const char *direction_to_string(Direction dir) {
     switch (dir) {
@@ -156,4 +83,86 @@ Direction string_to_direction(const char *s) {
     if (strcmp(s, "up")    == 0) return DIR_UP;
     if (strcmp(s, "down")  == 0) return DIR_DOWN;
     return DIR_COUNT;
+}
+
+// — Serialization
+
+void room_write_section(const Room *room, FILE *fp, const char *section) {
+    CHECK(room != NULL);
+    CHECK(fp != NULL);
+
+    file_chunk_write_section_start(fp, section);
+
+    // Write all exits
+    for (int dir = 0; dir < DIR_COUNT; dir++) {
+        Exit *exit = room->exits[dir];
+        if (exit) {
+            char args[256];
+            snprintf(args, sizeof(args), "%s %u %s", 
+                    direction_to_string(exit->dir),
+                    exit->to_room,
+                    exit->closed ? "true" : "false");
+            
+            if (exit->keyword) {
+                // Append keyword if it exists
+                size_t len = strlen(args);
+                snprintf(args + len, sizeof(args) - len, " %s", exit->keyword);
+            }
+            
+            file_chunk_write_section_inline(fp, "exit", args);
+        }
+    }
+
+    file_chunk_write_section_end(fp, section);
+}
+
+void room_read_section(Room *room, FileChunkReader *r, const char *section) {
+    CHECK(room != NULL);
+    CHECK(r != NULL);
+
+    while (file_chunk_read(r)) {
+        FileChunk *chunk = &r->chunk;
+
+        if (chunk->type == FILE_CHUNK_SECTION_END &&
+            strcmp(chunk->tag.data, section) == 0) {
+            return;
+        }
+
+        if (chunk->type == FILE_CHUNK_SECTION_START &&
+            strcmp(chunk->tag.data, "exit") == 0) {
+            Exit *exit = calloc(1, sizeof(Exit));
+            CHECK_MSG(exit != NULL, "OOM allocating Exit");
+            
+            char *args = chunk->value.data;
+            char word[1024];
+
+            args = str_parse_word(args, word, sizeof(word));
+            exit->dir = string_to_direction(word);
+
+            if (args) {
+                args = str_parse_word(args, word, sizeof(word));
+                exit->to_room = (ActorID)atoi(word);
+            }
+
+            if (args) {
+                args = str_parse_word(args, word, sizeof(word));
+                exit->closed = strcmp(word, "true") == 0;
+            }
+
+            if (args) {
+                exit->keyword = str_copy(args);
+            }
+
+            if (room->exits[exit->dir] != NULL) {
+                log_warn("Duplicate exit %d, replacing existing", exit->dir);
+                free(room->exits[exit->dir]->keyword);
+                free(room->exits[exit->dir]);
+            }
+            room->exits[exit->dir] = exit;
+        } else if (chunk->type != FILE_CHUNK_FIELD) {
+            log_warn("Unexpected chunk type in room section at line %d", r->line_number);
+        }
+    }
+
+    log_warn("Unterminated room section");
 }

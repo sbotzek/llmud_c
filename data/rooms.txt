@@ -1,18 +1,30 @@
 #room
 id: 1~
+#appearance
 name: The Starting Room~
+#end appearance
+#room
 #exit north 2~
+#end room
 #end room
 
 #room
 id: 2~
+#appearance
 name: A Dusty Hallway~
+#end appearance
+#room
 #exit south 1~
 #exit north 3 true stone door~
+#end room
 #end room
 
 #room
 id: 3~
+#appearance
 name: The Treasure Vault~
+#end appearance
+#room
 #exit south 2 true stone door~
+#end room
 #end room
