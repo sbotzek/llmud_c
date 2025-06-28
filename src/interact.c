@@ -53,8 +53,7 @@ void act_examine_location_player_perceive(Act *act, Actor *viewer) {
     // Show exits
     if (location->room) {
         char cbuf[256];
-        Buffer buf;
-        buffer_init(&buf, cbuf, sizeof(cbuf));
+        Buffer buf = buffer_init(cbuf, sizeof(cbuf));
 
         buffer_append_str(&buf, "Exits: ");
         bool first = true;

@@ -7,12 +7,15 @@
 #include <string.h>
 #include <stdio.h>
 
-void buffer_init(Buffer *buf, char *data, size_t capacity) {
-    buf->data = data;
-    buf->length = 0;
-    *((size_t*)&buf->capacity) = capacity;
-    buf->overflow = false;
-    buf->data[0] = '\0';
+Buffer buffer_init(char *data, size_t capacity) {
+    Buffer buf = {
+        .data = data,
+        .length = 0,
+        .capacity = capacity,
+        .overflow = false
+    };
+    buf.data[0] = '\0';
+    return buf;
 }
 
 void buffer_printf(Buffer *buf, const char *fmt, ...) {

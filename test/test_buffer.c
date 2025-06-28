@@ -5,8 +5,7 @@
 
 TEST(test_buffer_basic) {
     char data[64];
-    Buffer buf;
-    buffer_init(&buf, data, sizeof(data));
+    Buffer buf = buffer_init(data, sizeof(data));
 
     buffer_append_str(&buf, "hello");
     ASSERT(strcmp(buf.data, "hello") == 0);
@@ -23,8 +22,7 @@ TEST(test_buffer_basic) {
 
 TEST(test_buffer_overflow_truncates) {
     char data[16];
-    Buffer buf;
-    buffer_init(&buf, data, sizeof(data));
+    Buffer buf = buffer_init(data, sizeof(data));
 
     buffer_append_str(&buf, "12345678901234567890");
     ASSERT(buf.length < sizeof(data));  // should truncate before overflow
@@ -36,8 +34,7 @@ TEST(test_buffer_overflow_truncates) {
 
 TEST(test_buffer_trim) {
     char data[64];
-    Buffer buf;
-    buffer_init(&buf, data, sizeof(data));
+    Buffer buf = buffer_init(data, sizeof(data));
 
     buffer_append_str(&buf, "   trim this   \n");
     buffer_trim(&buf);
@@ -54,8 +51,7 @@ TEST(test_buffer_trim) {
 
 TEST(test_buffer_printf_long) {
     char data[64];
-    Buffer buf;
-    buffer_init(&buf, data, sizeof(data));
+    Buffer buf = buffer_init(data, sizeof(data));
 
     buffer_printf(&buf, "%d + %d = %d", 2, 2, 4);
     ASSERT(strcmp(buf.data, "2 + 2 = 4") == 0);

@@ -150,9 +150,7 @@ void player_save_character(Actor *actor) {
     ensure_directory(DATA_DIR "/pcs");
 
     char path_data[128];
-    Buffer path;
-
-    buffer_init(&path, path_data, sizeof(path_data));
+    Buffer path = buffer_init(path_data, sizeof(path_data));
     buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", actor->appearance.name);
     str_to_lower(path.data);
 
@@ -172,9 +170,7 @@ Actor *player_load_character(const char *name) {
     CHECK(name != NULL);
 
     char path_data[128];
-    Buffer path;
-
-    buffer_init(&path, path_data, sizeof(path_data));
+    Buffer path = buffer_init(path_data, sizeof(path_data));
     buffer_printf(&path, DATA_DIR "/pcs/%s.pchar", name);
     str_to_lower(path.data);
 

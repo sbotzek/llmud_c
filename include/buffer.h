@@ -20,7 +20,7 @@ typedef struct DynamicBuffer {
 } DynamicBuffer;
 
 // Init/free for stack or embedded use
-void buffer_init(Buffer *buf, char *data, size_t capacity);
+Buffer buffer_init(char *data, size_t capacity);
 
 // Append raw data or strings
 void buffer_append(Buffer *buf, const char *data, size_t size);
