@@ -65,16 +65,20 @@ void act_register_listener(ActType type, ActListenerFn fn) {
 }
 
 void act_perceive_to(Act *act, Actor *viewer) {
-    ActPerceiveFn fn = NULL;
-
     if (!viewer->player) {
-        fn = act->ai_perceive_fn;
+        // AI perceive function
+        if (act->ai_perceive_fn) {
+            (*act->ai_perceive_fn)(act, viewer);
+        }
     } else if (viewer->player) {
-        fn = act->player_perceive_fn;
-    }
-
-    if (fn) {
-        (*fn)(act, viewer);
+        // Player perceive function
+        if (act->player_perceive_fn) {
+            DynamicBuffer *buf = (*act->player_perceive_fn)(act, viewer);
+            if (buf) {
+                player_send(viewer->player, buf->data);
+                dbuffer_free(buf);
+            }
+        }
     }
 }
 

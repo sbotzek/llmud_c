@@ -3,6 +3,7 @@
 #define ACT_H
 #include <stdbool.h>
 #include "actor_id.h"
+#include "buffer.h"
 
 typedef struct Actor Actor;
 
@@ -27,15 +28,16 @@ typedef struct Act Act;
 
 // Function types used for defining an act.
 typedef bool (*ActPerformFn)(Act *act);
-typedef void (*ActPerceiveFn)(Act *act, Actor *viewer);
+typedef void (*AIPerceiveFn)(Act *act, Actor *viewer);
+typedef DynamicBuffer* (*PlayerPerceiveFn)(Act *act, Actor *viewer);
 
 // Should be the first member of your act-specific struct.
 typedef struct Act {
     ActType type; // must be set
 
     ActPerformFn perform_fn; // nullable
-    ActPerceiveFn ai_perceive_fn; // nullable
-    ActPerceiveFn player_perceive_fn; // nullable
+    AIPerceiveFn ai_perceive_fn; // nullable
+    PlayerPerceiveFn player_perceive_fn; // nullable
 
     Actor *actor; // not null
 } Act;

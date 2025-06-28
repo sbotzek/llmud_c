@@ -9,12 +9,13 @@
 #include "log.h"
 #include "interact.h"
 #include "actor.h"
+#include "buffer.h"
 
 #include <stdio.h>
 #include <stddef.h>
 
 static bool act_move_perform(Act *act);
-static void act_move_player_perceive(Act *act, Actor *viewer);
+static DynamicBuffer* act_move_player_perceive(Act *act, Actor *viewer);
 
 bool act_move(Actor *actor, Direction direction) {
     ActMove act = (ActMove){
@@ -78,34 +79,37 @@ static bool act_move_perform(Act *act) {
     return true;
 }
 
-static void act_move_player_perceive(Act *act, Actor *viewer) {
-    CHECK(viewer->player != NULL);
+static DynamicBuffer* act_move_player_perceive(Act *act, Actor *viewer) {
     ActMove *a = (ActMove*)act;
 
     log_trace("Actor %d viewer %d", act->actor->id, viewer->id);
 
+    DynamicBuffer *buf = dbuffer_new(256);
+
     switch (a->status) {
         case ACT_MOVE_STATUS_NOT_IN_ROOM:
-            player_send(viewer->player, "You can't go anywhere from here.\n");
+            dbuffer_append_str(buf, "You can't go anywhere from here.\n");
             break;
         case ACT_MOVE_STATUS_NO_EXIT:
-            player_send(viewer->player, "You can't go that way.\n");
+            dbuffer_append_str(buf, "You can't go that way.\n");
             break;
         case ACT_MOVE_STATUS_EXIT_CLOSED:
-            player_sendf(viewer->player, "The %s is closed.\n", a->exit->keyword);
+            dbuffer_appendf(buf, "The %s is closed.\n", a->exit->keyword);
             break;
         case ACT_MOVE_STATUS_OKAY:
             if (viewer == act->actor) {
-                player_sendf(viewer->player, "You move to the %s.\n", direction_to_string(a->direction));
+                dbuffer_appendf(buf, "You move to the %s.\n", direction_to_string(a->direction));
             } else if (viewer->location_id == a->from->id) {
-                player_sendf(viewer->player, "%s moves to the %s.\n", act->actor->appearance.name, direction_to_string(a->direction));
+                dbuffer_appendf(buf, "%s moves to the %s.\n", act->actor->appearance.name, direction_to_string(a->direction));
             } else if (viewer->location_id == a->to->id) {
-                player_sendf(viewer->player, "%s arrives from the %s.\n", act->actor->appearance.name, direction_to_string(direction_reverse(a->direction)));
+                dbuffer_appendf(buf, "%s arrives from the %s.\n", act->actor->appearance.name, direction_to_string(direction_reverse(a->direction)));
             } else {
                 log_error("viewer %u not handled, viewer location %u, from location %u, to location %u", viewer->id, viewer->location_id, a->from->id, a->to->id);
             }
             break;
     }
+
+    return buf;
 }
 
 void cmd_north(Actor *actor, const char *args) {
