@@ -14,6 +14,8 @@ OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 TEST_DIR = test
 TEST_BUILD_DIR = $(OBJ_DIR)/test
 TEST_SRC = $(filter-out $(SRC_DIR)/main.c, $(SRCS))
+TEST_HELPERS = $(wildcard $(TEST_DIR)/*.c)
+TEST_HELPERS := $(filter-out $(wildcard $(TEST_DIR)/test_*.c), $(TEST_HELPERS))
 TESTS = $(wildcard $(TEST_DIR)/test_*.c)
 TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(TEST_BUILD_DIR)/%,$(TESTS))
 
@@ -35,8 +37,8 @@ $(OBJ_DIR):
 $(TEST_BUILD_DIR):
 	mkdir -p $(TEST_BUILD_DIR)
 
-# Build test binaries (all src/*.c except main.c)
-$(TEST_BUILD_DIR)/test_%: $(TEST_DIR)/test_%.c $(TEST_SRC) | $(TEST_BUILD_DIR)
+# Build test binaries (all src/*.c except main.c + test helpers)
+$(TEST_BUILD_DIR)/test_%: $(TEST_DIR)/test_%.c $(TEST_SRC) $(TEST_HELPERS) | $(TEST_BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 # Run all tests
