@@ -118,8 +118,8 @@ Account *account_load(const char *username) {
     file_chunk_reader_init(&r, f);
 
     Account *acc = calloc(1, sizeof(Account));
+    CHECK_MSG(acc, "OOM allocating Account");
     dbuffer_init(&acc->character_names, 0);
-    CHECK(acc);
 
     while (file_chunk_read(&r)) {
         if (r.chunk.type != FILE_CHUNK_FIELD) {
