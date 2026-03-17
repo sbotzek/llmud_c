@@ -66,12 +66,10 @@ void act_register_listener(ActType type, ActListenerFn fn) {
 
 void act_perceive_to(Act *act, Actor *viewer) {
     if (!viewer->player) {
-        // AI perceive function
         if (act->ai_perceive_fn) {
             (*act->ai_perceive_fn)(act, viewer);
         }
-    } else if (viewer->player) {
-        // Player perceive function
+    } else {
         if (act->player_perceive_fn) {
             DynamicBuffer *buf = (*act->player_perceive_fn)(act, viewer);
             if (buf) {
