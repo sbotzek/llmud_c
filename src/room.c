@@ -1,8 +1,6 @@
 // room.c
 #include "room.h"
 
-#include <math.h>
-
 #include "file_chunk.h"
 #include "macros.h"
 #include "log.h"

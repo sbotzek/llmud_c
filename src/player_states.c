@@ -113,7 +113,6 @@ void player_state_enter_playing(Player *player, const char *name) {
         return;
     }
 
-
     player->state = PLAYER_STATE_PLAYING;
     player->input_handler = handle_playing_input;
 
@@ -335,7 +334,7 @@ static void list_account_characters(Player *player) {
     const char *start = player->account->character_names.data;
     const char *end   = start + len;
 
-    // Split on '\n'
+    // Split on ' '
     while (start < end) {
         const char *nl = memchr(start, ' ', end - start);
         size_t name_len = nl ? (size_t)(nl - start) : (size_t)(end - start);
