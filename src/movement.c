@@ -112,27 +112,14 @@ static DynamicBuffer* act_move_player_perceive(Act *act, Actor *viewer) {
     return buf;
 }
 
-void cmd_north(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_NORTH);
-}
-void cmd_south(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_SOUTH);
-}
-void cmd_east(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_EAST);
-}
-void cmd_west(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_WEST);
-}
-void cmd_up(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_UP);
-}
-void cmd_down(Actor *actor, const char *args) {
-    UNUSED(args);
-    act_move(actor, DIR_DOWN);
-}
+#define DIRECTION_CMD(name, dir) \
+    void cmd_##name(Actor *actor, const char *args) { UNUSED(args); act_move(actor, dir); }
+
+DIRECTION_CMD(north, DIR_NORTH)
+DIRECTION_CMD(south, DIR_SOUTH)
+DIRECTION_CMD(east, DIR_EAST)
+DIRECTION_CMD(west, DIR_WEST)
+DIRECTION_CMD(up, DIR_UP)
+DIRECTION_CMD(down, DIR_DOWN)
+
+#undef DIRECTION_CMD
